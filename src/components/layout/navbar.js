@@ -1,0 +1,300 @@
+import { appState } from '../../state.js';
+import { createIcon } from '../../icons.js';
+import { router } from '../../router.js';
+
+function formatTimeAgo(dateString) {
+  try {
+    const diffSec = Math.floor((new Date() - new Date(dateString)) / 1000);
+    if (diffSec < 60) return 'Just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${Math.floor(diffHours / 24)}d ago`;
+  } catch {
+    return 'Recently';
+  }
+}
+
+function getTypeIcon(type) {
+  switch (type) {
+    case 'JOB_ALERT': return createIcon('briefcase', 16, '#38bdf8');
+    case 'ACADEMIC': return createIcon('graduationCap', 16, '#818cf8');
+    case 'PLACEMENT': return createIcon('star', 16, '#f59e0b');
+    case 'INTERVIEW': return createIcon('messageSquare', 16, '#ec4899');
+    case 'CREDIT': return createIcon('coins', 16, '#10b981');
+    case 'SECURITY': return createIcon('shieldAlert', 16, '#ef4444');
+    default: return createIcon('sparkles', 16, '#a855f7');
+  }
+}
+
+export function renderNavbar() {
+  const currentPath = window.location.pathname;
+  const unread = appState.unreadCount;
+  const user = appState.currentUser;
+  const isDropdownOpen = appState.isDropdownOpen;
+  const isUserMenuOpen = appState.isUserMenuOpen;
+  const recent = appState.notifications.slice(0, 5);
+
+  const links = [
+    { label: 'Notes', path: '/notes' },
+    { label: 'PYQs', path: '/pyqs' },
+    { label: 'Placements', path: '/placements' },
+    { label: 'Companies', path: '/companies' },
+    { label: 'Interviews', path: '/interviews' },
+    { label: 'Jobs', path: '/jobs' },
+  ];
+
+  return `
+    <header style="position: sticky; top: 0; z-index: 100; background: rgba(11, 15, 25, 0.88); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-subtle);">
+      <div class="container" style="display: flex; align-items: center; justify-content: space-between; height: 70px;">
+        
+        <!-- Brand -->
+        <div style="display: flex; align-items: center; gap: 2rem;">
+          <a href="/" data-link style="display: flex; align-items: center; gap: 0.65rem;">
+            <div style="width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
+              ${createIcon('graduationCap', 22, '#fff')}
+            </div>
+            <div>
+              <span style="font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em; color: #fff;">
+                Student<span style="color: #818cf8;">Sphere</span>
+              </span>
+              <span style="display: block; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); line-height: 1;">
+                Academic & Career Hub
+              </span>
+            </div>
+          </a>
+
+          <!-- Nav links -->
+          <nav style="display: flex; align-items: center; gap: 0.5rem;" class="desktop-only-nav">
+            ${links.map(l => {
+              const active = currentPath.startsWith(l.path);
+              return `
+                <a href="${l.path}" data-link style="display: inline-flex; align-items: center; padding: 0.45rem 0.85rem; font-size: 0.875rem; font-weight: 600; border-radius: var(--radius-md); color: ${active ? '#fff' : 'var(--text-secondary)'}; background: ${active ? 'rgba(99, 102, 241, 0.15)' : 'transparent'}; border: 1px solid ${active ? 'rgba(99, 102, 241, 0.3)' : 'transparent'};">
+                  ${l.label}
+                </a>
+              `;
+            }).join('')}
+          </nav>
+        </div>
+
+        <!-- Right Section -->
+        <div style="display: flex; align-items: center; gap: 0.85rem;">
+          <div style="display: none; align-items: center; gap: 0.35rem; padding: 0.3rem 0.65rem; border-radius: var(--radius-full); background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); color: #10b981; font-size: 0.75rem; font-weight: 600;" class="desktop-free-badge">
+            ✨ Free Downloads (0 Credits)
+          </div>
+
+          <!-- 🔔 Notification Bell & Dropdown -->
+          <div style="position: relative;" id="navbar-bell-container">
+            <button
+              id="notification-bell-btn"
+              aria-label="Notifications"
+              style="position: relative; width: 42px; height: 42px; border-radius: var(--radius-md); background: ${isDropdownOpen ? 'rgba(99, 102, 241, 0.2)' : 'var(--bg-tertiary)'}; border: 1px solid ${isDropdownOpen ? 'var(--primary)' : 'var(--border-medium)'}; color: ${isDropdownOpen ? '#fff' : 'var(--text-primary)'}; display: flex; align-items: center; justify-content: center; cursor: pointer;"
+            >
+              ${createIcon('bell', 20, isDropdownOpen ? '#fff' : 'currentColor')}
+              ${unread > 0 ? `
+                <span id="navbar-unread-badge" style="position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #ef4444; color: #fff; font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(239, 68, 68, 0.6); border: 2px solid #0b0f19;">
+                  ${unread > 99 ? '99+' : unread}
+                </span>
+              ` : ''}
+            </button>
+
+            <!-- Notification Dropdown -->
+            ${isDropdownOpen ? `
+              <div class="notification-dropdown">
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.02);">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-weight: 700; font-size: 0.95rem; color: #fff;">Notifications</span>
+                    ${unread > 0 ? `<span class="badge badge-primary">${unread} new</span>` : ''}
+                  </div>
+                  ${unread > 0 ? `
+                    <button id="nav-mark-all-read-btn" style="background: transparent; border: none; color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                      ${createIcon('checkCheck', 14, 'currentColor')} Mark all read
+                    </button>
+                  ` : ''}
+                </div>
+
+                <div style="max-height: 340px; overflow-y: auto;">
+                  ${recent.length === 0 ? `
+                    <div style="padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                      No notifications right now
+                    </div>
+                  ` : recent.map(item => `
+                    <div 
+                      class="nav-notif-row" 
+                      data-id="${item.id}"
+                      data-url="${item.actionUrl || ''}"
+                      style="padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-subtle); background: ${item.isRead ? 'transparent' : 'rgba(99, 102, 241, 0.07)'}; display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer; position: relative;"
+                    >
+                      <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                        ${getTypeIcon(item.type)}
+                      </div>
+                      <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                          <h5 style="font-size: 0.825rem; font-weight: ${item.isRead ? '600' : '700'}; color: ${item.isRead ? 'var(--text-secondary)' : '#fff'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${item.title}
+                          </h5>
+                          ${!item.isRead ? '<span style="width: 7px; height: 7px; border-radius: 50%; background: #6366f1; flex-shrink: 0;"></span>' : ''}
+                        </div>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
+                          ${item.message}
+                        </p>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.4rem; font-size: 0.7rem;">
+                          <span style="color: var(--text-dim);">${formatTimeAgo(item.createdAt)}</span>
+                          <div style="display: flex; align-items: center; gap: 0.4rem;" class="nav-row-actions">
+                            ${!item.isRead ? `
+                              <button class="nav-mark-read-single-btn" data-id="${item.id}" title="Mark read" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 2px;">
+                                ${createIcon('check', 13, 'currentColor')}
+                              </button>
+                            ` : ''}
+                            <button class="nav-delete-single-btn" data-id="${item.id}" title="Delete" style="background: transparent; border: none; color: var(--text-dim); cursor: pointer; padding: 2px;">
+                              ${createIcon('trash', 13, 'currentColor')}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+
+                <div style="padding: 0.75rem 1rem; border-top: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.95); display: flex; align-items: center; justify-content: space-between;">
+                  <a href="/notifications" data-link style="font-size: 0.8rem; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 0.35rem;">
+                    View all notifications ${createIcon('externalLink', 12, 'currentColor')}
+                  </a>
+                  <a href="/settings/notifications" data-link style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem;">
+                    ${createIcon('settings', 13, 'currentColor')} Preferences
+                  </a>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- User Profile & Role Switcher -->
+          <div style="position: relative;" id="navbar-user-container">
+            <button
+              id="navbar-user-btn"
+              style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.65rem; border-radius: var(--radius-md); background: var(--bg-tertiary); border: 1px solid var(--border-medium); cursor: pointer; color: #fff;"
+            >
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;">
+                ${user.name.charAt(0)}
+              </div>
+              <span style="font-size: 0.825rem; font-weight: 600;" class="desktop-username">${user.name}</span>
+            </button>
+
+            ${isUserMenuOpen ? `
+              <div style="position: absolute; top: calc(100% + 10px); right: 0; width: 240px; background: #111827; border: 1px solid var(--border-medium); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 0.5rem; z-index: 1000;">
+                <div style="padding: 0.5rem; border-bottom: 1px solid var(--border-subtle);">
+                  <p style="font-size: 0.85rem; font-weight: 700; color: #fff;">${user.name}</p>
+                  <p style="font-size: 0.75rem; color: var(--text-muted);">${user.email}</p>
+                  <div style="display: flex; gap: 0.4rem; margin-top: 0.4rem;">
+                    <span class="badge ${user.role === 'admin' ? 'badge-danger' : 'badge-primary'}">
+                      ${user.role === 'admin' ? '🛡️ Admin' : '🎓 Student'}
+                    </span>
+                    <span class="badge badge-warning">🪙 ${user.credits} Cr</span>
+                  </div>
+                </div>
+
+                <div style="padding: 0.5rem 0; border-bottom: 1px solid var(--border-subtle);">
+                  <button
+                    id="nav-switch-role-btn"
+                    style="width: 100%; padding: 0.45rem 0.65rem; background: rgba(99, 102, 241, 0.1); border: 1px dashed var(--primary); border-radius: var(--radius-sm); color: #a5b4fc; font-size: 0.75rem; font-weight: 600; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 0.4rem;"
+                  >
+                    ${createIcon('shield', 14, 'currentColor')}
+                    Switch to ${user.role === 'admin' ? 'Student View' : 'Admin View'}
+                  </button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 2px; padding: 0.35rem 0;">
+                  <a href="/dashboard" data-link class="btn-ghost" style="padding: 0.45rem 0.65rem; font-size: 0.8rem; justify-content: flex-start;">
+                    My Dashboard
+                  </a>
+                  <a href="/settings/notifications" data-link class="btn-ghost" style="padding: 0.45rem 0.65rem; font-size: 0.8rem; justify-content: flex-start;">
+                    Notification Settings
+                  </a>
+                  <a href="/credits" data-link class="btn-ghost" style="padding: 0.45rem 0.65rem; font-size: 0.8rem; justify-content: flex-start;">
+                    Credits & Rewards
+                  </a>
+                  ${user.role === 'admin' ? `
+                    <a href="/admin" data-link class="btn-ghost" style="padding: 0.45rem 0.65rem; font-size: 0.8rem; justify-content: flex-start; color: #fca5a5;">
+                      Admin Portal
+                    </a>
+                  ` : ''}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    </header>
+  `;
+}
+
+export function bindNavbarEvents(container) {
+  const bellBtn = container.querySelector('#notification-bell-btn');
+  if (bellBtn) {
+    bellBtn.onclick = (e) => {
+      e.stopPropagation();
+      appState.setDropdownOpen(!appState.isDropdownOpen);
+      appState.setUserMenuOpen(false);
+    };
+  }
+
+  const userBtn = container.querySelector('#navbar-user-btn');
+  if (userBtn) {
+    userBtn.onclick = (e) => {
+      e.stopPropagation();
+      appState.setUserMenuOpen(!appState.isUserMenuOpen);
+      appState.setDropdownOpen(false);
+    };
+  }
+
+  const markAllBtn = container.querySelector('#nav-mark-all-read-btn');
+  if (markAllBtn) {
+    markAllBtn.onclick = (e) => {
+      e.stopPropagation();
+      appState.markAllAsRead();
+    };
+  }
+
+  const switchRoleBtn = container.querySelector('#nav-switch-role-btn');
+  if (switchRoleBtn) {
+    switchRoleBtn.onclick = (e) => {
+      e.stopPropagation();
+      appState.switchRole(appState.currentUser.role === 'admin' ? 'student' : 'admin');
+      appState.setUserMenuOpen(false);
+      if (appState.currentUser.role === 'admin') {
+        router.navigate('/admin');
+      } else {
+        router.navigate('/');
+      }
+    };
+  }
+
+  // Row clicks (navigate or mark read)
+  container.querySelectorAll('.nav-notif-row').forEach(row => {
+    row.onclick = (e) => {
+      if (e.target.closest('.nav-row-actions')) return;
+      const id = row.getAttribute('data-id');
+      const url = row.getAttribute('data-url');
+      appState.markAsRead(id);
+      appState.setDropdownOpen(false);
+      if (url) router.navigate(url);
+    };
+  });
+
+  container.querySelectorAll('.nav-mark-read-single-btn').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-id');
+      appState.markAsRead(id);
+    };
+  });
+
+  container.querySelectorAll('.nav-delete-single-btn').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-id');
+      appState.deleteNotification(id);
+    };
+  });
+}

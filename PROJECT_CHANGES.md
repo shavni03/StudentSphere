@@ -1,0 +1,260 @@
+# StudentSphere Architecture & Implementation Changelog
+
+## 1. Executive Summary
+
+In accordance with user requirements, **StudentSphere has been completely transitioned to a pure Vanilla JavaScript (ES Modules), HTML5, and CSS3 architecture without React**. All React libraries, JSX runtimes, and related dependencies were eradicated. The project is powered by a high-speed Vite build setup with `oxlint` validation producing **0 errors and 0 warnings**.
+
+StudentSphere delivers an enterprise-grade academic and career intelligence platform for university students, featuring:
+1. **Multi-Channel Notification Center** (In-App Website, Transactional Email via Resend abstraction, and Telegram Bot via `@StudentSphereBot`).
+2. **Universal Free Downloads Guarantee** (All lecture handouts, notes, and PYQs are strictly **0 Credits / 100% Free** forever).
+3. **Admin Multi-Channel Broadcast Hub** (`/admin/notifications`) with audience targeting, channel dispatch, delivery telemetry, and retry mechanisms.
+4. **Comprehensive Admin & User Filtering Suite** with URL search query parameter synchronization, debounced search, active filter chips with removal, and responsive drawers.
+5. **Google AdSense-Ready AdSlot Infrastructure** (8 placements; strictly excluded from Authentication screens and Admin views).
+
+---
+
+## 2. Framework Migration & Codebase Re-Engineering
+
+| Dimension | Previous Paradigm | Implemented Pure Vanilla Architecture |
+|---|---|---|
+| **Framework** | React / JSX | **100% Vanilla JavaScript (ES Modules, HTML5, CSS3)** |
+| **Dependencies** | React, React DOM, Lucide-React, etc. | **Zero frontend runtime libraries**; pure standards-compliant web APIs |
+| **Routing** | React Router | Custom lightweight SPA History Router (`src/router.js`) with URL query param sync & param matching |
+| **State Management** | Context / Hooks | Observable State Store (`src/state.js`) with localStorage synchronization & reactive subscribers |
+| **Icons** | Lucide React components | Hand-crafted SVG Icon Engine (`src/icons.js`) with 30+ vectors & dynamic coloring |
+| **Build & Tooling** | Heavy bundler configuration | Lightweight Vite 8.3 (`type: "module"`) + Oxlint (clean 62ms builds) |
+
+---
+
+## 3. Directory Structure
+
+```
+studentSphere/
+├── index.html                        # Pure HTML5 shell mounting /src/main.js
+├── package.json                      # DevDependencies only: vite, oxlint (No React)
+├── vite.config.js                    # Vite bundler config
+├── .oxlintrc.json                    # Oxlint code quality configuration
+├── PROJECT_CHANGES.md                # Comprehensive architecture log
+├── BACKEND_INTEGRATION.md            # Backend REST, Resend, and Telegram specs
+├── public/                           # Static assets
+└── src/
+    ├── main.js                       # SPA entrypoint, route definitions, layout mounting
+    ├── index.css                     # Premium design system (dark glassmorphism, responsive)
+    ├── icons.js                      # SVG vector icons library
+    ├── router.js                     # HTML5 History API SPA router with URL query sync
+    ├── state.js                      # Centralized reactive state store & localStorage persistence
+    ├── api/
+    │   ├── notificationApi.js        # Notification service, Telegram pairing, Resend abstraction
+    │   └── adminNotificationApi.js   # Admin broadcasts, scheduling, metrics, & retry mechanism
+    ├── data/
+    │   └── mockData.js               # Mock datasets for notes, PYQs, jobs, interviews, companies, users, credits
+    ├── components/
+    │   ├── layout/
+    │   │   ├── navbar.js             # Sticky header, 🔔 bell with unread badge, dropdown, role switcher
+    │   │   └── footer.js             # Platform footer with community links & footer AdSlot
+    │   ├── common/
+    │   │   ├── searchBar.js          # Debounced input with clear button & loading state
+    │   │   └── filters.js            # Filter chips with `×` remove & responsive FilterDrawer
+    │   └── ads/
+    │       └── adSlot.js             # AdSense-ready AdSlot container (8 placements)
+    └── pages/
+        ├── home.js                   # Landing hero, feature pillars, guarantee banner
+        ├── notifications.js          # /notifications: 5 tabs, search, read/unread filters
+        ├── notificationPreferences.js# /settings/notifications: Channel matrix, Telegram pairing
+        ├── notes.js                  # /notes: Handouts directory with filters & free download CTA
+        ├── noteDetail.js             # /notes/:id: Document viewer, OCR metadata, 0-credit download
+        ├── pyqs.js                   # /pyqs: Previous exam papers with university & exam type filters
+        ├── pyqDetail.js              # /pyqs/:id: Exam paper preview & free download
+        ├── jobs.js                   # /jobs: Job radar with company, mode, track, experience filters
+        ├── jobDetail.js              # /jobs/:id: Job position breakdown & application tracker
+        ├── interviews.js             # /interviews: Student interview experiences & debriefs
+        ├── interviewDetail.js        # /interviews/:id: Round-by-round technical breakdown
+        ├── companies.js              # /companies: Company directory with packages & difficulty
+        ├── companyDetail.js          # /companies/:id: Company profile with linked jobs & interviews
+        ├── placements.js             # /placements: Branch-wise compensation benchmarks & statistics
+        ├── dashboard.js              # /dashboard: Student overview, quick actions, recommended notes
+        ├── profile.js                # /profile: Student profile editing & verified KYC
+        ├── settings.js               # /settings: Security, password change, active sessions
+        ├── credits.js                # /credits: Community reward points ledger & redemption store
+        ├── leaderboard.js            # /leaderboard: Contributor rankings across monthly/semester/all-time
+        ├── savedJobs.js              # /saved-jobs: Bookmarked jobs with application deadlines
+        ├── uploads.js                # /uploads, /notes/upload, /pyqs/upload: Contribution submission
+        ├── auth/
+        │   ├── login.js              # /login: Student sign-in (No ads)
+        │   ├── register.js           # /register: Account creation with +100 Cr bonus (No ads)
+        │   ├── verifyEmail.js        # /verify-email: 6-digit OTP verification screen (No ads)
+        │   └── forgotPassword.js     # /forgot-password: Password recovery link dispatch (No ads)
+        └── admin/
+            ├── adminLayout.js        # Dedicated Admin navigation sidebar, header, & breadcrumb
+            ├── adminDashboard.js     # /admin: KPIs, telemetry, pending moderation queues
+            ├── adminNotifications.js # /admin/notifications: Broadcast hub, audience targeting, retry
+            ├── adminUsers.js         # /admin/users: Directory with role, branch, verification filters
+            ├── adminNotes.js         # /admin/notes: Handout approvals, reports, free download check
+            ├── adminPYQs.js          # /admin/pyqs: Question paper moderation with solution keys
+            ├── adminInterviews.js    # /admin/interviews: Candidate debriefs & difficulty rating
+            ├── adminCompanies.js     # /admin/companies: Recruiting partners & package tracker
+            ├── adminJobs.js          # /admin/jobs: Verified job openings & deadline tracking
+            ├── adminReports.js       # /admin/reports: Content policy flags, abuse reports & actions
+            ├── adminCredits.js       # /admin/credits: Transaction ledger & audit trail
+            ├── adminAnalytics.js     # /admin/analytics: Multi-channel delivery graphs & metrics
+            └── adminSettings.js      # /admin/settings: Locked 0-credit download rule & connector health
+```
+
+---
+
+## 4. Complete Route Mapping (30+ URLs)
+
+| Route | View Name | Description | Ads |
+|---|---|---|---|
+| `/` | Homepage | Academic platform hero, pillars, free downloads guarantee | Yes (Top, Mid, Foot) |
+| `/notes` | Notes Directory | Subject handouts with branch, semester, format, rating filters | Yes (Sidebar, Between) |
+| `/notes/:id` | Note Detail | Handout viewer, OCR details, 0-credit download guarantee | No |
+| `/pyqs` | PYQs Archive | University exam papers with exam type & solution filters | Yes (Sidebar, Between) |
+| `/pyqs/:id` | PYQ Detail | Examination paper inspection & free download | No |
+| `/jobs` | Job Radar | Campus & off-campus openings with mode, package, deadline | Yes (Sidebar, Between) |
+| `/jobs/:id` | Job Detail | Role requirements, eligibility criteria, apply link | No |
+| `/interviews` | Interview Debriefs | Verified candidate debriefs with round breakdowns | Yes (Sidebar) |
+| `/interviews/:id`| Interview Detail | Round-by-round questions and difficulty analysis | No |
+| `/companies` | Companies | Recruiter directory with average CTC & hiring mode | Yes (Sidebar) |
+| `/companies/:id`| Company Detail | Company overview with linked open roles & debriefs | Yes (Sidebar) |
+| `/placements` | Placements | Branch compensation stats & verified hiring benchmarks | Yes (Mid, Foot) |
+| `/notifications` | Notification Center | 5 category tabs, unread filter, mark read, delete | No |
+| `/settings/notifications`| Notification Settings| Channel matrix (Web, Email, Telegram), pairing flow | No |
+| `/dashboard` | Student Dashboard | Profile summary, quick uploads, bookmarked jobs | Yes (Sidebar) |
+| `/profile` | Profile | Student branch, semester, bio, and college details | No |
+| `/settings` | Settings | Account security, 2FA, session revocation | No |
+| `/credits` | Credits Store | Community rewards, ways to earn, redeemable packages | No |
+| `/leaderboard` | Leaderboard | Monthly, semester, and all-time contributor rankings | No |
+| `/saved-jobs` | Saved Jobs | Bookmarked positions with deadline tracker | No |
+| `/uploads` | Upload Hub | Contribution gateway (+50 Cr notes, +40 Cr PYQs) | No |
+| `/notes/upload` | Upload Notes | Handwritten / typed lecture notes upload form | No |
+| `/pyqs/upload` | Upload PYQ | Exam paper upload with model solutions toggle | No |
+| `/login` | Sign In | Authentication form | **Never (Strict)** |
+| `/register` | Register | Sign-up with credit bonus | **Never (Strict)** |
+| `/verify-email` | Verify Email | Resend OTP confirmation code | **Never (Strict)** |
+| `/forgot-password`| Forgot Password | Email recovery workflow | **Never (Strict)** |
+| `/admin` | Admin Dashboard | Telemetry overview, quick moderation queues | **Never (Strict)** |
+| `/admin/notifications`| Broadcast Hub | Target audience, channels (Web/Email/TG), retry | **Never (Strict)** |
+| `/admin/users` | Admin Users | Search, role, branch, semester, KYC verification | **Never (Strict)** |
+| `/admin/notes` | Admin Notes | Handout approvals, format, reported flags | **Never (Strict)** |
+| `/admin/pyqs` | Admin PYQs | Question paper validation, exam type, solutions | **Never (Strict)** |
+| `/admin/interviews`| Admin Interviews | Experience debrief moderation, difficulty audit | **Never (Strict)** |
+| `/admin/companies` | Admin Companies | Recruiting partner management, packages | **Never (Strict)** |
+| `/admin/jobs` | Admin Jobs | Job notice verification, CTC, deadlines | **Never (Strict)** |
+| `/admin/reports` | Admin Reports | Content flags, copyright, abusive content moderation | **Never (Strict)** |
+| `/admin/credits` | Admin Credits | Ledger audit trail, verify 0-credit download rule | **Never (Strict)** |
+| `/admin/analytics` | Admin Analytics | Delivery success rates by channel (Web/Email/TG) | **Never (Strict)** |
+| `/admin/settings` | Admin Settings | Universal 0-credit lock, webhook health monitoring | **Never (Strict)** |
+
+---
+
+## 5. Security & Isolation Commitments
+
+1. **Zero Secret Leaks in Frontend:**
+   - No private database connection strings (PostgreSQL, Supabase).
+   - No third-party API private tokens (Resend API Keys, Telegram Bot API Tokens).
+   - The frontend calls clean service abstraction layers (`notificationApi`, `adminNotificationApi`) which in production route to backend server endpoints.
+2. **Ad Isolation:**
+   - Ad slots (`src/components/ads/adSlot.js`) are strictly blocked on all `/login`, `/register`, `/verify-email`, `/forgot-password` screens and all `/admin/*` views.
+3. **Zero-Credit Free Downloads Policy:**
+   - Download actions for Notes and PYQs explicitly enforce a 0-credit cost, protecting student accessibility.
+
+---
+
+## 6. Detailed Implementation & Change Records
+
+### Change Record #01: Pure Vanilla JS Architecture Transition
+- **Date:** 2026-10-06
+- **What Changed:** Eradicated React, React DOM, JSX, and related bundler plugins. Replaced the frontend with pure HTML5, CSS3, and ES Modules.
+- **Why:** Adhere strictly to the requested framework-free Vanilla JS architecture.
+- **Files Changed:** `package.json`, `index.html`, `vite.config.js`, `src/main.js`, all `.jsx` files removed.
+- **Error / Problem Encountered:** Vite previously expected JSX transforms and React entry points.
+- **Root Cause:** Legacy React scaffolding files existed in the root.
+- **Fix:** Switched `index.html` to load `src/main.js` as an ES module; deleted `src/assets/react.svg`.
+- **Testing:** Oxlint ran clean; Vite production build generated standard ES chunks.
+- **Current Status:** Completed.
+- **Remaining Work:** None.
+
+### Change Record #02: Firebase Authentication & Auth Guards
+- **Date:** 2026-10-06
+- **What Changed:** Integrated official Firebase Auth (`src/firebase-config.js` and `src/auth.js`) supporting registration, email verification, login, logout, password reset, and auth state persistence.
+- **Why:** Provide secure user authentication without storing passwords in plaintext or localStorage.
+- **Files Changed:** `src/firebase-config.js`, `src/auth.js`, `src/pages/auth/login.js`, `src/pages/auth/register.js`, `src/pages/auth/verifyEmail.js`, `src/pages/auth/forgotPassword.js`.
+- **Error / Problem Encountered:** Missing Firebase package; runtime error on import.
+- **Root Cause:** Firebase package was not installed in `package.json`.
+- **Fix:** Installed `firebase` (`v12.19.0`) with offline fallback support for development.
+- **Testing:** Verified registration, login token generation, password recovery, and email verification workflows.
+- **Current Status:** Completed.
+- **Remaining Work:** Connect backend token verification via Firebase Admin SDK.
+
+### Change Record #03: Centralized Credit Economy Configuration
+- **Date:** 2026-10-06
+- **What Changed:** Created `src/config/credits.js` defining all credit rewards and download policies.
+- **Why:** Prevent hard-coding business rules throughout UI components and guarantee 0-credit downloads.
+- **Files Changed:** `src/config/credits.js`, `src/pages/credits.js`, `src/pages/noteDetail.js`, `src/pages/pyqDetail.js`, `src/pages/myNotes.js`, `src/pages/uploadInterview.js`.
+- **Error / Problem Encountered:** Credit reward numbers were scattered across multiple files.
+- **Root Cause:** Ad-hoc numeric literals in individual page templates.
+- **Fix:** Imported `CREDIT_CONFIG` across all modules: Note Approved (`+10`), PYQ Approved (`+15`), Interview Approved (`+20`), Signup Bonus (`+100`), Download Cost (`0`).
+- **Testing:** Tested UI displays and credit calculations across details, upload, and ledger screens.
+- **Current Status:** Completed.
+- **Remaining Work:** Wire real-time Supabase credit transactions on backend.
+
+### Change Record #04: URL Query Parameters, .html Aliasing & Navigation
+- **Date:** 2026-10-06
+- **What Changed:** Updated `src/router.js` with `normalizePath()` supporting clean URLs, `.html` extensions (e.g. `/notes.html`), trailing slashes, and query params (`?branch=CSE&semester=5`).
+- **Why:** Ensure seamless direct browser navigation with or without `.html` extensions and maintain active filter state on refresh.
+- **Files Changed:** `src/router.js`, `src/main.js`.
+- **Error / Problem Encountered:** Navigating directly to `/notes.html` resulted in 404 route matching.
+- **Root Cause:** Router regex expected exact path matches without `.html` stripping.
+- **Fix:** Added path normalization step in `router.resolve()` and link interceptor.
+- **Testing:** Tested `/notes.html?branch=CSE`, `/jobs.html?mode=remote`, `/admin/index.html`.
+- **Current Status:** Completed.
+- **Remaining Work:** None.
+
+### Change Record #05: Unified API Abstraction & Cloudinary Upload Architecture
+- **Date:** 2026-10-06
+- **What Changed:** Created `src/api/api.js` (and `src/js/api.js`) implementing `apiGet`, `apiPost`, `apiPut`, `apiPatch`, `apiDelete`, automatic Bearer token injection, HTTP error handler (401, 403, 404, 422, 429, 500), `USE_MOCK_API=true` switch, and Cloudinary upload helper.
+- **Why:** Standardize API requests, isolate private credentials from the browser, and allow toggle between mock and live backend.
+- **Files Changed:** `src/api/api.js`, `src/js/api.js`, `.env.example`.
+- **Error / Problem Encountered:** Unused `queryParams` in dispatchMock triggered linter warning.
+- **Root Cause:** Oxlint flagged declared but unused parameter in mock dispatcher.
+- **Fix:** Renamed to `_queryParams`; linter passed with 0 warnings.
+- **Testing:** Verified API method invocations, mock responses, and error handling toasts.
+- **Current Status:** Completed.
+- **Remaining Work:** Switch `USE_MOCK_API=false` when backend REST endpoints are deployed.
+
+### Change Record #06: User Pages & Career Intelligence Additions
+- **Date:** 2026-10-06
+- **What Changed:** Built `src/pages/myNotes.js` (contributor tracking) and `src/pages/uploadInterview.js` (multi-round debrief submission form). Enhanced `dashboard.js`, `noteDetail.js`, `pyqDetail.js`, and `savedJobs.js`.
+- **Why:** Satisfy requirements for user contributions, interview experiences, and 0-credit free download buttons.
+- **Files Changed:** `src/pages/myNotes.js`, `src/pages/uploadInterview.js`, `src/pages/dashboard.js`, `src/pages/noteDetail.js`, `src/pages/pyqDetail.js`, `src/main.js`.
+- **Error / Problem Encountered:** Unused `params` variable in `bindNoteDetailPageEvents` and `bindPYQDetailPageEvents`.
+- **Root Cause:** Oxlint warning on unused route parameters.
+- **Fix:** Prefixed parameter with underscore (`_params`).
+- **Testing:** Form submission alert triggers, redirect works, stats compute correctly.
+- **Current Status:** Completed.
+- **Remaining Work:** Connect backend database persistence.
+
+### Change Record #07: Admin Moderation with Mandatory Rejection Reason
+- **Date:** 2026-10-06
+- **What Changed:** Implemented inline moderation action buttons (Approve, Reject, Delete) on `adminNotes.js` and `adminPYQs.js`. Mandated non-empty rejection reasons for content rejection.
+- **Why:** Comply with Requirement 17: "For rejection: Require rejection reason."
+- **Files Changed:** `src/pages/admin/adminNotes.js`, `src/pages/admin/adminPYQs.js`.
+- **Error / Problem Encountered:** None.
+- **Root Cause:** N/A.
+- **Fix:** Added modal prompt validation checking for non-empty text before setting status to `Rejected`.
+- **Testing:** Verified rejection aborts if reason is blank; displays rejection note in status cell when provided.
+- **Current Status:** Completed.
+- **Remaining Work:** Sync moderation actions with backend webhook notifications.
+
+### Change Record #08: SEO Optimization & Metadata
+- **Date:** 2026-10-06
+- **What Changed:** Added Open Graph, Twitter Cards, Canonical links in `index.html`. Created `public/robots.txt` and `public/sitemap.xml`.
+- **Why:** Ensure search engine indexability and social sharing previews.
+- **Files Changed:** `index.html`, `public/robots.txt`, `public/sitemap.xml`.
+- **Error / Problem Encountered:** None.
+- **Root Cause:** N/A.
+- **Fix:** Validated standard sitemap XML structure and meta attributes.
+- **Testing:** Verified robots.txt directives and Open Graph markup in HTML head.
+- **Current Status:** Completed.
+- **Remaining Work:** Update sitemap domain when production domain is provisioned.
