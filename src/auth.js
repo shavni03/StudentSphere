@@ -17,7 +17,8 @@ import {
   sendEmailVerification,
   updateProfile,
   onAuthStateChanged,
-  reload
+  reload,
+  deleteUser
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from './firebase-config.js';
 import { appState } from './state.js';
@@ -47,9 +48,9 @@ export function getCurrentUser() {
     return {
       uid: u.uid,
       id: u.uid,
-      name: u.displayName || u.email?.split('@')[0] || 'Student',
+      name: u.displayName || u.email?.split('@')[0] || appState.currentUser?.name || 'Student',
       email: u.email,
-      isEmailVerified: Boolean(u.emailVerified),
+      isEmailVerified: Boolean(u.emailVerified || appState.currentUser?.isEmailVerified),
       role: u.email?.includes('admin') ? 'admin' : (appState.currentUser?.role || 'student'),
       branch: appState.currentUser?.branch || 'CSE',
       semester: appState.currentUser?.semester || '5',
@@ -261,6 +262,31 @@ export async function logout() {
 }
 
 export const logoutUser = logout;
+
+/**
+ * Permanently delete current user account from Firebase and state
+ */
+export async function deleteAccount() {
+  if (isFirebaseConfigured && auth?.currentUser) {
+    try {
+      await deleteUser(auth.currentUser);
+    } catch (err) {
+      if (err.code === 'auth/requires-recent-login') {
+        throw new Error('For security, please log out and log back in before deleting your account.');
+      }
+      throw err;
+    }
+  }
+
+  localStorage.removeItem(STORAGE_KEY_AUTH_USER);
+  appState.currentUser = null;
+  appState.isDropdownOpen = false;
+  appState.isUserMenuOpen = false;
+  appState.notify();
+
+  router.navigate('/');
+  return { success: true, message: 'Your StudentSphere account has been permanently deleted.' };
+}
 
 /**
  * Send password reset email via Firebase

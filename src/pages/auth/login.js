@@ -34,17 +34,13 @@ export function renderLoginPage() {
           </div>
         ` : ''}
 
-        ${errorMessage ? `
-          <div style="padding: 0.75rem 1rem; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; font-size: 0.85rem; margin-bottom: 1.25rem;">
-            ${errorMessage}
-          </div>
-        ` : ''}
+        <div id="login-error-box" style="display: ${errorMessage ? 'block' : 'none'}; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; font-size: 0.85rem; margin-bottom: 1.25rem;">
+          ${errorMessage}
+        </div>
 
-        ${infoMessage ? `
-          <div style="padding: 0.75rem 1rem; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; font-size: 0.85rem; margin-bottom: 1.25rem;">
-            ${infoMessage}
-          </div>
-        ` : ''}
+        <div id="login-info-box" style="display: ${infoMessage ? 'block' : 'none'}; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; font-size: 0.85rem; margin-bottom: 1.25rem;">
+          ${infoMessage}
+        </div>
 
         <form id="login-form" novalidate>
           <input type="hidden" id="login-redirect" value="${redirectTarget}" />
@@ -72,14 +68,25 @@ export function renderLoginPage() {
                 Forgot Password?
               </a>
             </div>
-            <input 
-              type="password" 
-              class="form-input" 
-              id="login-password" 
-              required 
-              placeholder="••••••••" 
-              style="width: 100%;" 
-            />
+            <div style="position: relative; display: flex; align-items: center;">
+              <input 
+                type="password" 
+                class="form-input" 
+                id="login-password" 
+                required 
+                placeholder="••••••••" 
+                style="width: 100%; padding-right: 2.75rem;" 
+              />
+              <button
+                type="button"
+                id="toggle-login-password-btn"
+                title="Show / Hide Password"
+                aria-label="Toggle password visibility"
+                style="position: absolute; right: 10px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: color 0.15s ease;"
+              >
+                ${createIcon('eye', 18, 'currentColor')}
+              </button>
+            </div>
           </div>
 
           <!-- Remember Me Checkbox -->
@@ -113,7 +120,38 @@ export function renderLoginPage() {
 }
 
 export function bindLoginEvents(container) {
+  // Password Visibility Toggle
+  const togglePwdBtn = container.querySelector('#toggle-login-password-btn');
+  const pwdInput = container.querySelector('#login-password');
+  if (togglePwdBtn && pwdInput) {
+    togglePwdBtn.onclick = () => {
+      const isShowing = pwdInput.type === 'text';
+      pwdInput.type = isShowing ? 'password' : 'text';
+      togglePwdBtn.innerHTML = createIcon(isShowing ? 'eye' : 'eyeOff', 18, 'currentColor');
+      togglePwdBtn.style.color = isShowing ? 'var(--text-muted)' : 'var(--primary)';
+    };
+  }
+
   const form = container.querySelector('#login-form');
+  const errorBox = container.querySelector('#login-error-box');
+  const submitBtn = container.querySelector('#login-submit-btn');
+
+  const showError = (msg) => {
+    errorMessage = msg;
+    if (errorBox) {
+      errorBox.textContent = msg;
+      errorBox.style.display = 'block';
+    }
+  };
+
+  const hideError = () => {
+    errorMessage = '';
+    if (errorBox) {
+      errorBox.textContent = '';
+      errorBox.style.display = 'none';
+    }
+  };
+
   if (form) {
     form.onsubmit = async (e) => {
       e.preventDefault();
@@ -122,15 +160,16 @@ export function bindLoginEvents(container) {
       const redirectTarget = container.querySelector('#login-redirect')?.value || '';
 
       if (!email || !password) {
-        errorMessage = 'Please enter both your email address and password.';
-        router.resolve();
+        showError('Please enter both your email address and password.');
         return;
       }
 
+      hideError();
       isLoading = true;
-      errorMessage = '';
-      infoMessage = '';
-      router.resolve();
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Signing In...';
+      }
 
       try {
         await login(email, password);
@@ -149,9 +188,12 @@ export function bindLoginEvents(container) {
         const targetUrl = redirectTarget || '/dashboard';
         router.navigate(targetUrl);
       } catch (err) {
-        errorMessage = err.message || 'Login failed. Please verify your credentials.';
+        showError(err.message || 'Login failed. Please verify your credentials.');
         isLoading = false;
-        router.resolve();
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Sign In';
+        }
       }
     };
   }

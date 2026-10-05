@@ -29,9 +29,14 @@ export function renderVerifyEmailPage() {
           <strong style="color: var(--text-primary); font-size: 0.95rem; word-break: break-all;">${user.email}</strong>
         </p>
 
-        <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5;">
+        <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.5;">
           Please open your email client, click the confirmation link in the email from Firebase / StudentSphere, and then click below to continue.
         </p>
+
+        <!-- Spam / Junk Folder Advisory -->
+        <div style="padding: 0.85rem 1rem; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; font-size: 0.85rem; margin-bottom: 1.5rem; text-align: left; line-height: 1.5;">
+          <strong>💡 Note:</strong> If you don't see the confirmation email in your primary inbox, please make sure to check your <strong>Spam</strong> or <strong>Junk</strong> folder.
+        </div>
 
         ${statusMessage ? `
           <div style="padding: 0.85rem 1rem; border-radius: var(--radius-md); font-size: 0.875rem; margin-bottom: 1.5rem; text-align: left; ${

@@ -1,5 +1,8 @@
 import { notificationApi, DEFAULT_PREFERENCES, DEFAULT_TELEGRAM_STATUS } from './api/notificationApi.js';
 
+const DEFAULT_BRANCHES = ['CSE', 'IT', 'AIDS', 'ECE', 'EE', 'ME', 'Civil', 'Chemical'];
+const DEFAULT_SEMESTERS = ['1', '2', '3', '4', '5', '6', '7', '8'];
+
 class StateStore {
   constructor() {
     this.listeners = new Set();
@@ -10,18 +13,24 @@ class StateStore {
     this.isUserMenuOpen = false;
     this.isAuthInitialized = false;
 
-    let initialUser = null;
+    // Do NOT assume user is logged in until Firebase confirms auth state
+    this.currentUser = null;
+
+    // Branches & Semesters management (Admin-configurable)
+    let savedBranches = null;
+    let savedSemesters = null;
     if (typeof localStorage !== 'undefined') {
-      const savedAuthUser = localStorage.getItem('studentsphere_auth_user');
-      if (savedAuthUser) {
-        try {
-          initialUser = JSON.parse(savedAuthUser);
-        } catch {
-          initialUser = null;
-        }
+      try {
+        const b = localStorage.getItem('studentsphere_branches');
+        if (b) savedBranches = JSON.parse(b);
+        const s = localStorage.getItem('studentsphere_semesters');
+        if (s) savedSemesters = JSON.parse(s);
+      } catch {
+        // use defaults
       }
     }
-    this.currentUser = initialUser;
+    this.branches = Array.isArray(savedBranches) && savedBranches.length ? savedBranches : [...DEFAULT_BRANCHES];
+    this.semesters = Array.isArray(savedSemesters) && savedSemesters.length ? savedSemesters : [...DEFAULT_SEMESTERS];
 
     // Theme state (dark | light)
     const savedTheme = typeof localStorage !== 'undefined' ? (localStorage.getItem('studentsphere_theme') || 'dark') : 'dark';
@@ -77,9 +86,53 @@ class StateStore {
     }
   }
 
+  // Branch management
+  addBranch(branch) {
+    const trimmed = (branch || '').trim().toUpperCase();
+    if (trimmed && !this.branches.includes(trimmed)) {
+      this.branches.push(trimmed);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('studentsphere_branches', JSON.stringify(this.branches));
+      }
+      this.notify();
+    }
+  }
+
+  removeBranch(branch) {
+    this.branches = this.branches.filter(b => b !== branch);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('studentsphere_branches', JSON.stringify(this.branches));
+    }
+    this.notify();
+  }
+
+  // Semester management
+  addSemester(sem) {
+    const trimmed = (sem || '').trim();
+    if (trimmed && !this.semesters.includes(trimmed)) {
+      this.semesters.push(trimmed);
+      this.semesters.sort((a, b) => Number(a) - Number(b));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('studentsphere_semesters', JSON.stringify(this.semesters));
+      }
+      this.notify();
+    }
+  }
+
+  removeSemester(sem) {
+    this.semesters = this.semesters.filter(s => s !== sem);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('studentsphere_semesters', JSON.stringify(this.semesters));
+    }
+    this.notify();
+  }
+
   switchRole(newRole) {
+    if (!this.currentUser) return;
     this.currentUser.role = newRole;
-    localStorage.setItem('studentsphere_user', JSON.stringify(this.currentUser));
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('studentsphere_auth_user', JSON.stringify(this.currentUser));
+    }
     this.notify();
   }
 

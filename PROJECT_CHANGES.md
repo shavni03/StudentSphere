@@ -362,4 +362,35 @@ studentSphere/
   - Preview server: HTTP 200 OK verified on `http://localhost:4173/`.
 - **Current Status:** Fully operational and production ready.
 
+### Change Record #11: Password Visibility Toggles, Dynamic Branch/Semester Management, Spam Advisory, Firebase Live Connect, Unauth Navbar Fix & Delete Account
+- **Date:** 2026-10-06
+- **Changes Made:**
+  1. **Password Show / Hide Visibility Toggles:** Integrated interactive eye / eye-off toggle buttons (`createIcon('eye')` / `createIcon('eyeOff')`) on password fields in both Sign In (`/login`) and Account Registration (`/register`) for password and confirm password inputs.
+  2. **Branch & Semester Dropdown Unselected Defaults:** Removed automatic pre-selection of 'CSE' and 'Sem 5' in registration. Dropdowns now initialize with clean, non-selectable prompt placeholders: `<option value="" disabled selected>Select Branch</option>` and `<option value="" disabled selected>Select Semester</option>` with explicit validation.
+  3. **Admin Degree Branch & Semester Management (`/admin/settings`):** Added a dedicated administration management card enabling platform admins to view active degree branches and semesters as badges, delete obsolete options with confirmation, and add new academic branches/semesters seamlessly with instant reactivity and local persistence.
+  4. **Non-Destructive Form Validation (No Field Resetting):** Fixed registration validation error handling. Form submissions with unchecked Terms & Conditions or mismatched passwords now display smooth in-page error banners (`#reg-error-box`) without invoking `router.resolve()`, completely preserving all typed input data.
+  5. **Spam / Junk Email Verification Notices:** Added prominent informational advisory callouts on both registration confirmation and `/auth/verify-email.html`: *"💡 Note: If you don't see the confirmation email in your primary inbox, please make sure to check your Spam or Junk folder."*
+  6. **Live Firebase Configuration (`studentsphere-71a6a`):** Created `.env` with user-provided production credentials (`AIzaSyDULxdCuP3yH7mJPZwTfGQ0LfAqxJ4KVhk`, app ID, project ID, measurement ID) and updated `src/firebase-config.js` with fallback project defaults and safe Firebase Analytics initialization.
+  7. **Unauthenticated Navbar State Resolution:** Fixed premature username rendering on cold load by strictly defaulting `appState.currentUser` to `null` on construction until Firebase `onAuthStateChanged` actively confirms an authenticated session.
+  8. **Permanent Account Deletion Feature:** Implemented `deleteAccount()` in `src/auth.js` calling Firebase `deleteUser(auth.currentUser)`, purging local session caches, resetting UI state, and redirecting to the homepage. Added Danger Zone delete account cards with two-step prompt confirmation ("DELETE") in both `/settings` and `/profile`.
+- **Files Changed:**
+  - `.env` (Created)
+  - `src/firebase-config.js`
+  - `src/icons.js`
+  - `src/state.js`
+  - `src/auth.js`
+  - `src/pages/auth/login.js`
+  - `src/pages/auth/register.js`
+  - `src/pages/auth/verifyEmail.js`
+  - `src/pages/admin/adminSettings.js`
+  - `src/pages/settings.js`
+  - `src/pages/profile.js`
+  - `PROJECT_CHANGES.md`
+- **Testing Performed:**
+  - Expanded 35-assertion automated test suite (`scratch/test_auth_suite.mjs`): 35 passed, 0 failed.
+  - Oxlint: 0 errors, 0 warnings across all 68 codebase files.
+  - Production build: `vite build` completed with code 0.
+- **Current Status:** Fully operational and production ready.
+
+
 
