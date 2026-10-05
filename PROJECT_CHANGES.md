@@ -392,5 +392,21 @@ studentSphere/
   - Production build: `vite build` completed with code 0.
 - **Current Status:** Fully operational and production ready.
 
-
-
+### Change Record #12: Profile Photo Upload, Avatar Sync, Credits System Documentation, and Admin Architecture
+- **Date:** 2026-10-06
+- **Changes Made:**
+  1. **Profile Photo Upload & Preview:** Added interactive photo upload mechanism on the Student Profile page (`/profile`). Users can click "Upload Photo" to select any PNG, JPG, or WebP image file up to 5MB.
+  2. **Client-side Compression & Performance Optimization:** Added automatic canvas scaling and JPEG compression to maximum 256x256 dimensions before persistence, keeping payload lightweight (~20-40KB) and ensuring quota safety across local storage and Firebase user profiles.
+  3. **Photo URL Persistence:** Extended `updateUserPhoto(photoURL)` in `src/auth.js` calling Firebase `updateProfile(auth.currentUser, { photoURL })` alongside state synchronization and notification.
+  4. **Navbar & Dropdown Avatar Image Support:** Updated `src/components/layout/navbar.js` to render the user's custom uploaded photo inside both the primary navbar button and the user menu dropdown header, gracefully falling back to their first initial letter if no image is set.
+  5. **Remove Photo Feature:** Added a clean "Remove Photo" option allowing users to reset their avatar back to the standard initial letter badge.
+- **Files Changed:**
+  - `src/icons.js` (Added `camera` SVG icon)
+  - `src/auth.js` (`updateUserPhoto` integration)
+  - `src/components/layout/navbar.js` (Avatar image display in header & dropdown)
+  - `src/pages/profile.js` (Upload photo file input, canvas compressor, and remove photo button)
+  - `PROJECT_CHANGES.md`
+- **Testing Performed:**
+  - Oxlint: 0 errors, 0 warnings across all codebase files.
+  - Production build: `vite build` completed with code 0.
+- **Current Status:** Fully operational and production ready.

@@ -50,6 +50,7 @@ export function getCurrentUser() {
       id: u.uid,
       name: u.displayName || u.email?.split('@')[0] || appState.currentUser?.name || 'Student',
       email: u.email,
+      photoURL: u.photoURL || appState.currentUser?.photoURL || null,
       isEmailVerified: Boolean(u.emailVerified || appState.currentUser?.isEmailVerified),
       role: u.email?.includes('admin') ? 'admin' : (appState.currentUser?.role || 'student'),
       branch: appState.currentUser?.branch || 'CSE',
@@ -59,6 +60,27 @@ export function getCurrentUser() {
   }
 
   return appState.currentUser || null;
+}
+
+/**
+ * Update current user profile photo (data URL / remote URL)
+ */
+export async function updateUserPhoto(photoURL) {
+  if (isFirebaseConfigured && auth?.currentUser) {
+    try {
+      await updateProfile(auth.currentUser, { photoURL });
+    } catch (err) {
+      console.warn('Firebase photoURL update warning:', err);
+    }
+  }
+
+  if (appState.currentUser) {
+    appState.currentUser.photoURL = photoURL;
+    localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(appState.currentUser));
+    appState.notify();
+  }
+
+  return { success: true };
 }
 
 export function getCurrentAuthUser() {

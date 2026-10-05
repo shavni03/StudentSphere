@@ -192,8 +192,8 @@ export function renderNavbar() {
                 id="navbar-user-btn"
                 style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.65rem; border-radius: var(--radius-md); background: var(--bg-tertiary); border: 1px solid var(--border-medium); cursor: pointer; color: var(--text-primary);"
               >
-                <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;">
-                  ${user.name ? user.name.charAt(0).toUpperCase() : 'S'}
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; overflow: hidden; flex-shrink: 0;">
+                  ${user.photoURL ? `<img src="${user.photoURL}" alt="${user.name}" style="width: 100%; height: 100%; object-fit: cover;" />` : (user.name ? user.name.charAt(0).toUpperCase() : 'S')}
                 </div>
                 <span style="font-size: 0.825rem; font-weight: 600;" class="desktop-username">${user.name || 'Account'}</span>
                 ${createIcon('chevronDown', 14, 'currentColor')}
@@ -201,18 +201,23 @@ export function renderNavbar() {
 
               ${isUserMenuOpen ? `
                 <div style="position: absolute; top: calc(100% + 10px); right: 0; width: 250px; background: var(--bg-secondary); border: 1px solid var(--border-medium); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 0.5rem; z-index: 1000;">
-                  <div style="padding: 0.6rem; border-bottom: 1px solid var(--border-subtle);">
-                    <p style="font-size: 0.875rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">${user.name}</p>
-                    <p style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all;">${user.email}</p>
-                    <div style="display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap;">
-                      <span class="badge ${user.role === 'admin' ? 'badge-danger' : 'badge-primary'}">
-                        ${user.role === 'admin' ? '🛡️ Admin' : '🎓 Student'}
-                      </span>
-                      <span class="badge ${user.isEmailVerified ? 'badge-success' : 'badge-warning'}">
-                        ${user.isEmailVerified ? '✓ Verified' : '⚠️ Unverified'}
-                      </span>
-                      <span class="badge badge-warning">🪙 ${user.credits || 0} Cr</span>
+                  <div style="padding: 0.6rem; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 0.65rem; align-items: center;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; overflow: hidden; flex-shrink: 0;">
+                      ${user.photoURL ? `<img src="${user.photoURL}" alt="${user.name}" style="width: 100%; height: 100%; object-fit: cover;" />` : (user.name ? user.name.charAt(0).toUpperCase() : 'S')}
                     </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <p style="font-size: 0.875rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${user.name}</p>
+                      <p style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all;">${user.email}</p>
+                    </div>
+                  </div>
+                  <div style="padding: 0.4rem 0.6rem 0.6rem; display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                    <span class="badge ${user.role === 'admin' ? 'badge-danger' : 'badge-primary'}">
+                      ${user.role === 'admin' ? '🛡️ Admin' : '🎓 Student'}
+                    </span>
+                    <span class="badge ${user.isEmailVerified ? 'badge-success' : 'badge-warning'}">
+                      ${user.isEmailVerified ? '✓ Verified' : '⚠️ Unverified'}
+                    </span>
+                    <span class="badge badge-warning">🪙 ${user.credits || 0} Cr</span>
                   </div>
 
                   <div style="display: flex; flex-direction: column; gap: 2px; padding: 0.4rem 0; border-bottom: 1px solid var(--border-subtle);">

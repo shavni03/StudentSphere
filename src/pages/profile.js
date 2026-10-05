@@ -1,7 +1,7 @@
 import { appState } from '../state.js';
 import { router } from '../router.js';
 import { createIcon } from '../icons.js';
-import { deleteAccount } from '../auth.js';
+import { deleteAccount, updateUserPhoto } from '../auth.js';
 
 export function renderProfilePage() {
   const user = appState.currentUser || { name: 'Student', email: 'student@university.edu', branch: 'CSE', semester: '5' };
@@ -20,19 +20,36 @@ export function renderProfilePage() {
       </div>
 
       <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
-        <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle);">
-          <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 800; color: #fff;">
-            ${user.name ? user.name.charAt(0).toUpperCase() : 'S'}
+        <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap;">
+          <div style="position: relative;">
+            <div id="profile-avatar-container" style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; color: #fff; overflow: hidden; border: 3px solid var(--border-medium); box-shadow: var(--shadow-sm);">
+              ${user.photoURL ? `<img id="profile-avatar-img" src="${user.photoURL}" alt="${user.name}" style="width: 100%; height: 100%; object-fit: cover;" />` : `<span id="profile-avatar-initial">${user.name ? user.name.charAt(0).toUpperCase() : 'S'}</span>`}
+            </div>
+            <input type="file" id="profile-photo-input" accept="image/png, image/jpeg, image/webp" style="display: none;" />
           </div>
-          <div>
-            <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary);">${user.name}</h2>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">${user.email}</p>
-            <div style="display: flex; gap: 0.5rem; margin-top: 0.4rem; flex-wrap: wrap;">
-              <span class="badge ${user.role === 'admin' ? 'badge-danger' : 'badge-primary'}">${user.role === 'admin' ? '🛡️ Admin' : '🎓 Student'}</span>
-              <span class="badge ${user.isEmailVerified ? 'badge-success' : 'badge-warning'}">
-                ${user.isEmailVerified ? '✓ Verified Student' : '⚠️ Unverified'}
-              </span>
-              <span class="badge badge-warning">🪙 ${user.credits || 0} Cr</span>
+          <div style="flex: 1; min-width: 240px;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+              <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary); margin: 0;">${user.name}</h2>
+              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                <span class="badge ${user.role === 'admin' ? 'badge-danger' : 'badge-primary'}">${user.role === 'admin' ? '🛡️ Admin' : '🎓 Student'}</span>
+                <span class="badge ${user.isEmailVerified ? 'badge-success' : 'badge-warning'}">
+                  ${user.isEmailVerified ? '✓ Verified Student' : '⚠️ Unverified'}
+                </span>
+                <span class="badge badge-warning">🪙 ${user.credits || 0} Cr</span>
+              </div>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0.25rem 0 0.75rem;">${user.email}</p>
+            
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <button type="button" id="btn-upload-photo" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.85rem; display: flex; align-items: center; gap: 0.4rem;">
+                ${createIcon('camera', 14, 'currentColor')} Upload Photo
+              </button>
+              ${user.photoURL ? `
+                <button type="button" id="btn-remove-photo" class="btn btn-ghost" style="font-size: 0.8rem; padding: 0.4rem 0.85rem; color: #ef4444; display: flex; align-items: center; gap: 0.4rem;">
+                  ${createIcon('trash', 14, '#ef4444')} Remove Photo
+                </button>
+              ` : ''}
+              <span style="font-size: 0.75rem; color: var(--text-muted);">PNG, JPG, WebP up to 5MB</span>
             </div>
           </div>
         </div>
@@ -122,6 +139,96 @@ export function bindProfileEvents(container) {
 
       alert('Profile updated successfully!');
       router.navigate('/dashboard');
+    };
+  }
+
+  // Profile Photo Upload Handler
+  const photoInput = container.querySelector('#profile-photo-input');
+  const uploadPhotoBtn = container.querySelector('#btn-upload-photo');
+  const removePhotoBtn = container.querySelector('#btn-remove-photo');
+
+  if (uploadPhotoBtn && photoInput) {
+    uploadPhotoBtn.onclick = () => photoInput.click();
+  }
+
+  if (photoInput) {
+    photoInput.onchange = (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file (PNG, JPG, or WebP).');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image file size must be less than 5MB.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        const img = new Image();
+        img.onload = async () => {
+          try {
+            // Compress and scale to max 256x256 for fast web performance & quota safety
+            const canvas = document.createElement('canvas');
+            const maxDim = 256;
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+              if (width > maxDim) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              }
+            } else {
+              if (height > maxDim) {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+            if (uploadPhotoBtn) {
+              uploadPhotoBtn.disabled = true;
+              uploadPhotoBtn.textContent = 'Saving Photo...';
+            }
+
+            await updateUserPhoto(compressedDataUrl);
+            alert('Profile photo updated successfully!');
+            router.navigate('/profile');
+          } catch (err) {
+            alert('Failed to update photo: ' + (err.message || 'Unknown error'));
+            if (uploadPhotoBtn) {
+              uploadPhotoBtn.disabled = false;
+              uploadPhotoBtn.innerHTML = `${createIcon('camera', 14, 'currentColor')} Upload Photo`;
+            }
+          }
+        };
+        img.src = readerEvent.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+  }
+
+  if (removePhotoBtn) {
+    removePhotoBtn.onclick = async () => {
+      if (confirm('Are you sure you want to remove your profile photo?')) {
+        try {
+          removePhotoBtn.disabled = true;
+          removePhotoBtn.textContent = 'Removing...';
+          await updateUserPhoto(null);
+          alert('Profile photo removed.');
+          router.navigate('/profile');
+        } catch (err) {
+          alert('Failed to remove photo: ' + (err.message || 'Unknown error'));
+          removePhotoBtn.disabled = false;
+        }
+      }
     };
   }
 
