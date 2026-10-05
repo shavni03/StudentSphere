@@ -22,6 +22,13 @@ import { renderPlacementsPage, bindPlacementsEvents } from './pages/placements.j
 import { renderNotificationsPage, bindNotificationsPageEvents } from './pages/notifications.js';
 import { renderNotificationPreferencesPage, bindNotificationPreferencesEvents } from './pages/notificationPreferences.js';
 
+// Legal & Trust Pages (AdSense Compliance)
+import { renderAboutPage } from './pages/about.js';
+import { renderContactPage, bindContactEvents } from './pages/contact.js';
+import { renderPrivacyPage } from './pages/privacy.js';
+import { renderTermsPage } from './pages/terms.js';
+import { renderCookiePolicyPage } from './pages/cookiePolicy.js';
+
 // User & Community Pages
 import { renderDashboardPage, bindDashboardEvents } from './pages/dashboard.js';
 import { renderProfilePage, bindProfileEvents } from './pages/profile.js';
@@ -207,17 +214,73 @@ router
     renderAppShell(renderUploadsPage(params), bindUploadsEvents, 'Upload Past Exam Paper (+40 Cr)');
   })
 
+  // Legal & Trust Routes (AdSense Compliance)
+  .addRoute('/about', () => {
+    renderAppShell(renderAboutPage(), null, 'About StudentSphere — Mission & Moderation');
+  })
+  .addRoute('/about.html', () => {
+    renderAppShell(renderAboutPage(), null, 'About StudentSphere — Mission & Moderation');
+  })
+  .addRoute('/contact', () => {
+    renderAppShell(renderContactPage(), bindContactEvents, 'Contact Us & Student Support');
+  })
+  .addRoute('/contact.html', () => {
+    renderAppShell(renderContactPage(), bindContactEvents, 'Contact Us & Student Support');
+  })
+  .addRoute('/privacy', () => {
+    renderAppShell(renderPrivacyPage(), null, 'Privacy Policy');
+  })
+  .addRoute('/privacy.html', () => {
+    renderAppShell(renderPrivacyPage(), null, 'Privacy Policy');
+  })
+  .addRoute('/terms', () => {
+    renderAppShell(renderTermsPage(), null, 'Terms & Conditions of Service');
+  })
+  .addRoute('/terms.html', () => {
+    renderAppShell(renderTermsPage(), null, 'Terms & Conditions of Service');
+  })
+  .addRoute('/cookie-policy', () => {
+    renderAppShell(renderCookiePolicyPage(), null, 'Cookie & Storage Policy');
+  })
+  .addRoute('/cookie-policy.html', () => {
+    renderAppShell(renderCookiePolicyPage(), null, 'Cookie & Storage Policy');
+  })
+
   // Auth Routes (No Ads)
   .addRoute('/login', () => {
+    renderAppShell(renderLoginPage(), bindLoginEvents, 'Sign In', { isAuth: true });
+  })
+  .addRoute('/auth/login', () => {
+    renderAppShell(renderLoginPage(), bindLoginEvents, 'Sign In', { isAuth: true });
+  })
+  .addRoute('/auth/login.html', () => {
     renderAppShell(renderLoginPage(), bindLoginEvents, 'Sign In', { isAuth: true });
   })
   .addRoute('/register', () => {
     renderAppShell(renderRegisterPage(), bindRegisterEvents, 'Create Student Account', { isAuth: true });
   })
+  .addRoute('/auth/register', () => {
+    renderAppShell(renderRegisterPage(), bindRegisterEvents, 'Create Student Account', { isAuth: true });
+  })
+  .addRoute('/auth/register.html', () => {
+    renderAppShell(renderRegisterPage(), bindRegisterEvents, 'Create Student Account', { isAuth: true });
+  })
   .addRoute('/verify-email', () => {
     renderAppShell(renderVerifyEmailPage(), bindVerifyEmailEvents, 'Verify Email KYC', { isAuth: true });
   })
+  .addRoute('/auth/verify-email', () => {
+    renderAppShell(renderVerifyEmailPage(), bindVerifyEmailEvents, 'Verify Email KYC', { isAuth: true });
+  })
+  .addRoute('/auth/verify-email.html', () => {
+    renderAppShell(renderVerifyEmailPage(), bindVerifyEmailEvents, 'Verify Email KYC', { isAuth: true });
+  })
   .addRoute('/forgot-password', () => {
+    renderAppShell(renderForgotPasswordPage(), bindForgotPasswordEvents, 'Forgot Password', { isAuth: true });
+  })
+  .addRoute('/auth/forgot-password', () => {
+    renderAppShell(renderForgotPasswordPage(), bindForgotPasswordEvents, 'Forgot Password', { isAuth: true });
+  })
+  .addRoute('/auth/forgot-password.html', () => {
     renderAppShell(renderForgotPasswordPage(), bindForgotPasswordEvents, 'Forgot Password', { isAuth: true });
   })
 

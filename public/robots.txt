@@ -7,9 +7,15 @@ Allow: /interviews
 Allow: /companies
 Allow: /placements
 Allow: /leaderboard
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /cookie-policy
 Disallow: /admin
 Disallow: /admin/
 Disallow: /settings
 Disallow: /settings/
+Disallow: /auth/
 
-Sitemap: https://studentsphere.edu/sitemap.xml
+Sitemap: https://studentsphere.internal/sitemap.xml

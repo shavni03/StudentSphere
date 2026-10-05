@@ -176,12 +176,40 @@ All backend responses must conform to the unified envelope:
 
 ---
 
-### 4.7 Admin Moderation Suite (`/api/v1/admin/*`)
+### 4.7 Contact & Feedback Submission (`/api/v1/contact`)
+- **POST `/api/v1/contact`**
+  - **Payload:** `{ name, email, subject, message }`
+  - **Behavior:** Logs inquiry into admin support desk, dispatches confirmation email via Resend, and notifies support administrators.
+  - **Response `200 OK`:** `{ success: true, message: "Inquiry received. Ticket ID: SS-XXXX" }`
+
+---
+
+### 4.8 Admin Moderation Suite (`/api/v1/admin/*`)
+- **Review Pipeline:** User Upload → `PENDING` → Admin Review → `APPROVED` (Published + Credits Awarded) or `REJECTED` (Rejection Reason Logged).
 - **POST `/api/v1/admin/notes/:id/approve`**
   - Transitions note status to `Approved`, releases to public listings, credits uploader with `+10 Credits`, dispatches approval notification.
 - **POST `/api/v1/admin/notes/:id/reject`**
-  - **Mandatory Payload:** `{ reason: "Blurry scan / missing pages 10-20" }`
+  - **Mandatory Payload:** `{ reason: "Blurry scan / missing pages 10-20 / copyright conflict" }`
   - Sets status to `Rejected`, records rejection reason, sends email/in-app alert to uploader explaining reason.
 - **POST `/api/v1/admin/pyqs/:id/approve`** & **`/reject`**
+- **POST `/api/v1/admin/interviews/:id/approve`** & **`/reject`**
 - **POST `/api/v1/admin/broadcasts`**
   - Broadcast announcement to selected audience (`All`, `CSE`, `5th Sem`) via Website, Email, and Telegram.
+
+---
+
+## 5. CORS & Network Security Requirements
+
+The backend service must support the following CORS policy for production and local development origins:
+
+```http
+Access-Control-Allow-Origin: https://studentsphere.internal, http://localhost:5173, http://localhost:4173
+Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+Access-Control-Allow-Headers: Authorization, Content-Type, Accept, X-Requested-With
+Access-Control-Allow-Credentials: true
+Access-Control-Max-Age: 86400
+```
+
+### Preflight (OPTIONS) Handling:
+Every preflight request must return `204 No Content` with appropriate headers before processing the payload.
+

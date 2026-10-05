@@ -37,27 +37,31 @@ export function renderNavbar() {
   const recent = appState.notifications.slice(0, 5);
 
   const links = [
+    { label: 'Home', path: '/' },
     { label: 'Notes', path: '/notes' },
     { label: 'PYQs', path: '/pyqs' },
     { label: 'Placements', path: '/placements' },
     { label: 'Companies', path: '/companies' },
     { label: 'Interviews', path: '/interviews' },
     { label: 'Jobs', path: '/jobs' },
+    { label: 'Leaderboard', path: '/leaderboard' },
+    { label: 'About', path: '/about' },
+    { label: 'Contact', path: '/contact' },
   ];
 
   return `
-    <header style="position: sticky; top: 0; z-index: 100; background: rgba(11, 15, 25, 0.88); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-subtle);">
+    <header class="navbar-header" style="position: sticky; top: 0; z-index: 100; background: var(--bg-glass); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-subtle);">
       <div class="container" style="display: flex; align-items: center; justify-content: space-between; height: 70px;">
         
         <!-- Brand -->
-        <div style="display: flex; align-items: center; gap: 2rem;">
-          <a href="/" data-link style="display: flex; align-items: center; gap: 0.65rem;">
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+          <a href="/" data-link style="display: flex; align-items: center; gap: 0.65rem; text-decoration: none;">
             <div style="width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
               ${createIcon('graduationCap', 22, '#fff')}
             </div>
             <div>
-              <span style="font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em; color: #fff;">
-                Student<span style="color: #818cf8;">Sphere</span>
+              <span style="font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary);">
+                Student<span style="color: #6366f1;">Sphere</span>
               </span>
               <span style="display: block; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); line-height: 1;">
                 Academic & Career Hub
@@ -66,11 +70,11 @@ export function renderNavbar() {
           </a>
 
           <!-- Nav links -->
-          <nav style="display: flex; align-items: center; gap: 0.5rem;" class="desktop-only-nav">
+          <nav style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;" class="desktop-only-nav">
             ${links.map(l => {
-              const active = currentPath.startsWith(l.path);
+              const active = l.path === '/' ? currentPath === '/' : currentPath.startsWith(l.path);
               return `
-                <a href="${l.path}" data-link style="display: inline-flex; align-items: center; padding: 0.45rem 0.85rem; font-size: 0.875rem; font-weight: 600; border-radius: var(--radius-md); color: ${active ? '#fff' : 'var(--text-secondary)'}; background: ${active ? 'rgba(99, 102, 241, 0.15)' : 'transparent'}; border: 1px solid ${active ? 'rgba(99, 102, 241, 0.3)' : 'transparent'};">
+                <a href="${l.path}" data-link style="display: inline-flex; align-items: center; padding: 0.4rem 0.65rem; font-size: 0.85rem; font-weight: 600; border-radius: var(--radius-md); text-decoration: none; color: ${active ? 'var(--primary)' : 'var(--text-secondary)'}; background: ${active ? 'rgba(99, 102, 241, 0.12)' : 'transparent'}; border: 1px solid ${active ? 'rgba(99, 102, 241, 0.25)' : 'transparent'};">
                   ${l.label}
                 </a>
               `;

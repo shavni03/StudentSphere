@@ -258,3 +258,58 @@ studentSphere/
 - **Testing:** Verified robots.txt directives and Open Graph markup in HTML head.
 - **Current Status:** Completed.
 - **Remaining Work:** Update sitemap domain when production domain is provisioned.
+
+### Change Record #09: Light Mode Text Visibility, AdSense-Ready AdSlot System & Legal Compliance
+- **Date:** 2026-10-06
+- **Changes Made:**
+  1. **Light Mode High-Contrast Overrides:** Fixed unreadable white text (`color: #fff;`) in light view across headings, paragraphs, cards, form inputs, navbar, footer, and tables. Added comprehensive `[data-theme="light"]` CSS variables and fallback overrides in `src/index.css`.
+  2. **Brand Favicon & Theme Persistence:** Created clean graduation cap SVG favicon in `public/favicon.svg` and integrated persistent light/dark mode toggle button (`☀️ / 🌙`) in `src/components/layout/navbar.js`.
+  3. **AdSense AdSlot System (`js/ads.js` / `src/js/ads.js`):** Built standard 11-slot advertising system (`home-top`, `home-middle`, `notes-sidebar`, `notes-content`, `pyqs-content`, `jobs-sidebar`, `jobs-content`, `placements-content`, `interviews-content`, `footer`, `mobile`). Excluded fake ads entirely; displays developer-only compliant placeholder when `VITE_ADSENSE_CLIENT_ID` is unconfigured. Ads are strictly barred from auth forms and the admin portal.
+  4. **5 Production-Grade Legal & Trust Pages:**
+     - `/about` & `/about.html`: Platform mission, 6 educational pillars, human-in-the-loop review workflow, and fair use academic disclaimer.
+     - `/contact` & `/contact.html`: Validated support form with backend-ready feedback ("Contact submission will be available after backend integration"), support emails, and DMCA agent contacts.
+     - `/privacy` & `/privacy.html`: Detailed privacy policy covering Firebase Auth, Cloudinary storage, Supabase PostgreSQL, AdSense cookies, Resend emails, Telegram notifications, and user rights.
+     - `/terms` & `/terms.html`: Complete terms of service including acceptable use, account security, user-generated content responsibility, prohibited uploads (pirated books, paid course leaks, PII), and admin moderation rights.
+     - `/cookie-policy` & `/cookie-policy.html`: Explanation of essential local storage, theme persistence, and third-party advertising cookies with opt-out links.
+  5. **Standardized 4-Column Footer (`src/components/layout/footer.js`):** Structured across STUDENTSPHERE, RESOURCES, LEGAL, and CONNECT WITH US, including copyright statement (`© 2026 StudentSphere. All rights reserved.`) and academic fair use disclaimer.
+  6. **Consistent Public Navigation (`src/components/layout/navbar.js`):** Links for Home, Notes, PYQs, Placements, Companies, Interviews, Jobs, Leaderboard, About, and Contact.
+  7. **Removal of Fake Reviews / Fake Testimonials:** Removed fabricated student quotes, ratings, and inflated metrics from `src/pages/home.js`. Replaced with authentic educational architecture, study pillars, and platform integrity sections.
+  8. **Upload Copyright & Moderation Integrity (`src/pages/uploads.js` & `src/pages/uploadInterview.js`):** Added explicit warnings against uploading copyrighted textbooks or paid course leaks, added copyright affirmation checkboxes, and implemented `PENDING` moderation queue state feedback.
+  9. **API & Environment Placeholders:** Created `js/api.js` and `js/ads.js` entrypoints, updated `.env.example` with AdSense slot placeholders, and added `meta[name="robots"]` tag to `index.html`.
+- **Files Changed:**
+  - `src/index.css`
+  - `src/main.js`
+  - `src/pages/home.js`
+  - `src/pages/about.js` (Created)
+  - `src/pages/contact.js` (Created)
+  - `src/pages/privacy.js` (Created)
+  - `src/pages/terms.js` (Created)
+  - `src/pages/cookiePolicy.js` (Created)
+  - `src/components/layout/navbar.js`
+  - `src/components/layout/footer.js`
+  - `src/components/ads/adSlot.js`
+  - `src/js/ads.js` (Created)
+  - `js/ads.js` (Created)
+  - `js/api.js` (Created)
+  - `src/pages/uploads.js`
+  - `src/pages/uploadInterview.js`
+  - `public/favicon.svg` (Created)
+  - `public/robots.txt`
+  - `public/sitemap.xml`
+  - `index.html`
+  - `.env.example`
+  - `README.md`
+  - `BACKEND_INTEGRATION.md`
+  - `PROJECT_CHANGES.md`
+- **Why Changes Were Made:** Solve user-reported Light Mode visibility bug where white text on light backgrounds was unreadable, and implement full Google AdSense publisher compliance, authentic educational content standards, and legal trust requirements.
+- **AdSense-Readiness Changes:** Reusable 11-slot system, no fake ads, no deceptive button placements, complete exclusion from auth and admin dashboard, 0-credit free downloads guarantee.
+- **SEO Changes:** Added robots meta tag (`index, follow`), canonical URL auto-sync, updated XML sitemap with all legal pages, and updated robots.txt.
+- **Security Changes:** Zero private secrets in frontend repository. Backend will verify Firebase ID tokens, manage Cloudinary upload signatures, and enforce Supabase RLS.
+- **Testing Performed:**
+  - Oxlint: 0 errors, 0 warnings across 66 files.
+  - Production build: `vite build` completed successfully.
+  - Local preview server: Verified on `http://localhost:4173/`.
+  - HTTP curl checks: Verified `200 OK` on `/`, `/robots.txt`, and `/sitemap.xml`.
+- **Current Status:** Fully implemented and production build validated.
+- **Remaining Backend Work:** Connect live backend microservices when deployed (Firebase ID token verification, Supabase database storage, Cloudinary signed uploads, Resend emails, and Telegram webhook).
+
