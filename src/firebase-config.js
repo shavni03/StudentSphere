@@ -10,14 +10,16 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' ? process.env : {});
+
 export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'studentsphere-71a6a.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'studentsphere-71a6a',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'studentsphere-71a6a.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '958383056579',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:958383056579:web:e9c3def42f5ca2fb74e476',
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-E9J982XCL0'
+  apiKey: env.VITE_FIREBASE_API_KEY || '',
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || 'studentsphere-71a6a.firebaseapp.com',
+  projectId: env.VITE_FIREBASE_PROJECT_ID || 'studentsphere-71a6a',
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || 'studentsphere-71a6a.firebasestorage.app',
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '958383056579',
+  appId: env.VITE_FIREBASE_APP_ID || '1:958383056579:web:e9c3def42f5ca2fb74e476',
+  measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || 'G-E9J982XCL0'
 };
 
 export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.apiKey.trim() !== '');

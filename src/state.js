@@ -8,30 +8,31 @@ class StateStore {
     this.telegram = DEFAULT_TELEGRAM_STATUS;
     this.isDropdownOpen = false;
     this.isUserMenuOpen = false;
+    this.isAuthInitialized = false;
 
-    const savedUser = localStorage.getItem('studentsphere_user');
-    this.currentUser = savedUser ? JSON.parse(savedUser) : {
-      id: 'usr-001',
-      name: 'Karan Kumar',
-      email: 'karan@studentsphere.edu',
-      role: 'student', // 'student' | 'admin'
-      branch: 'CSE',
-      semester: '5',
-      university: 'Delhi Technological University',
-      credits: 350,
-      isEmailVerified: true
-    };
+    let initialUser = null;
+    if (typeof localStorage !== 'undefined') {
+      const savedAuthUser = localStorage.getItem('studentsphere_auth_user');
+      if (savedAuthUser) {
+        try {
+          initialUser = JSON.parse(savedAuthUser);
+        } catch {
+          initialUser = null;
+        }
+      }
+    }
+    this.currentUser = initialUser;
 
     // Theme state (dark | light)
-    const savedTheme = localStorage.getItem('studentsphere_theme') || 'dark';
+    const savedTheme = typeof localStorage !== 'undefined' ? (localStorage.getItem('studentsphere_theme') || 'dark') : 'dark';
     this.theme = savedTheme;
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
 
     // Saved jobs
-    const savedJobs = localStorage.getItem('studentsphere_saved_jobs');
-    this.savedJobIds = savedJobs ? JSON.parse(savedJobs) : ['job-1'];
+    const savedJobs = typeof localStorage !== 'undefined' ? localStorage.getItem('studentsphere_saved_jobs') : null;
+    this.savedJobIds = savedJobs ? JSON.parse(savedJobs) : [];
 
     this.init();
   }
@@ -53,11 +54,12 @@ class StateStore {
   }
 
   get unreadCount() {
+    if (!this.currentUser) return 0;
     return this.notifications.filter(n => !n.isRead).length;
   }
 
   get isAdmin() {
-    return this.currentUser.role === 'admin';
+    return Boolean(this.currentUser && this.currentUser.role === 'admin');
   }
 
   subscribe(listener) {
@@ -136,13 +138,17 @@ class StateStore {
     } else {
       this.savedJobIds.push(id);
     }
-    localStorage.setItem('studentsphere_saved_jobs', JSON.stringify(this.savedJobIds));
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('studentsphere_saved_jobs', JSON.stringify(this.savedJobIds));
+    }
     this.notify();
   }
 
   toggleTheme() {
     this.theme = this.theme === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('studentsphere_theme', this.theme);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('studentsphere_theme', this.theme);
+    }
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', this.theme);
     }

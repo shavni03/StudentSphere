@@ -313,3 +313,53 @@ studentSphere/
 - **Current Status:** Fully implemented and production build validated.
 - **Remaining Backend Work:** Connect live backend microservices when deployed (Firebase ID token verification, Supabase database storage, Cloudinary signed uploads, Resend emails, and Telegram webhook).
 
+### Change Record #10: Firebase Authentication, Protected Student Features & Mandatory Email Verification
+- **Date:** 2026-10-06
+- **Changes Made:**
+  1. **Strictly Framework-Free Architecture Retained:** Maintained pure HTML5, CSS3, and Vanilla JavaScript (ES Modules). Zero frontend frameworks (no React, Next.js, Vue, or Angular).
+  2. **Public Home & Informational Pages:** Homepage (`/`, `/index.html`) is permanently public and accessible without forced authentication. Public visitors can freely access Home, About (`/about`), Features (`/features`), Contact (`/contact`), Privacy Policy (`/privacy`), Terms & Conditions (`/terms`), and Cookie Policy (`/cookie-policy`).
+  3. **Protected Student Features & Route Guards:** Protected student resources (Notes, PYQs, Placements, Companies, Interviews, Jobs, Leaderboard, Dashboard, Profile, Notifications, Credits, Saved Jobs, Uploads, Settings) strictly require authentication. Unauthenticated access displays an accessible "Login required" prompt ("Please login to continue" / "Create your free StudentSphere account to access student resources") with `[Login]` and `[Create Account]` buttons.
+  4. **Query Parameter & URL Preservation:** Fully preserves target URLs across redirects (e.g. `/jobs.html?location=Delhi&type=Internship` redirects to `/auth/login.html?redirect=%2Fjobs.html%3Flocation%3DDelhi%26type%3DInternship`). Post-login and post-verification, users are automatically returned to their exact requested destination.
+  5. **Firebase Authentication Integration (`src/auth.js` & `js/auth.js`):** Centralized auth module implementing:
+     - `login(email, password)` via Firebase `signInWithEmailAndPassword`
+     - `register({ name, email, password, confirmPassword, termsAccepted })` via Firebase `createUserWithEmailAndPassword` and `sendEmailVerification`
+     - `logout()` via Firebase `signOut`, clearing auth state and redirecting to `/`
+     - `sendPasswordReset(email)` via Firebase `sendPasswordResetEmail`
+     - `sendVerificationEmail()` via Firebase `sendEmailVerification`
+     - `reloadCurrentUser()` via Firebase `reload`
+     - `getAuthToken()` via `currentUser.getIdToken()` for `Authorization: Bearer <token>`
+     - `onAuthStateChanged` real-time listener syncing user state
+  6. **Mandatory Email Verification (`/auth/verify-email.html`):** Removed fake 6-digit OTP code input. Implemented official Firebase verification flow with three actions:
+     - `I Have Verified` (calls `await reload(user)` and checks `emailVerified === true`)
+     - `Resend Verification Email` (calls `sendVerificationEmail()`)
+     - `Logout` (signs out)
+  7. **Dynamic Navbar State:**
+     - Logged out: Displays Home, About, Features, Contact, Theme toggle (`☀️ / 🌙`), `Login`, and `Register`.
+     - Logged in: Displays Home, Notes, PYQs, Placements, Jobs, Interviews, Dashboard, Theme toggle, Notification bell with unread badge, and User menu dropdown with avatar initial, profile link, credits, settings, admin portal (if admin), and `Logout` button.
+  8. **Admin Authorization Guard:** Admin routes (`/admin/*`) strictly verify `user.role === 'admin'` in addition to email verification. Non-admins receive an explicit `403 Forbidden: Admin Access Required` card.
+  9. **Auth Loading State:** While Firebase initializes auth state on cold load, a non-intrusive "Checking your account..." loading spinner displays, preventing premature content flash.
+- **Files Changed:**
+  - `src/state.js`
+  - `src/auth.js`
+  - `js/auth.js`
+  - `src/main.js`
+  - `src/components/layout/navbar.js`
+  - `src/pages/features.js` (Created)
+  - `src/pages/auth/login.js`
+  - `src/pages/auth/register.js`
+  - `src/pages/auth/verifyEmail.js`
+  - `src/pages/auth/forgotPassword.js`
+  - `src/firebase-config.js`
+  - `src/router.js`
+  - `README.md`
+  - `PROJECT_CHANGES.md`
+- **Why Changes Were Made:** Satisfy core project authentication requirements, secure protected student features behind genuine Firebase email verification, preserve user redirect flows, and eliminate fake OTP/password mechanisms.
+- **Security Changes:** No passwords in Supabase or localStorage. Zero secret keys in client bundle. Ready for backend `Authorization: Bearer <Firebase ID Token>` validation.
+- **Testing Performed:**
+  - Complete 24-assertion auth test suite (`scratch/test_auth_suite.mjs`): All 24 assertions passed.
+  - Oxlint: 0 errors, 0 warnings across all 68 files.
+  - Production build: `vite build` completed with code 0.
+  - Preview server: HTTP 200 OK verified on `http://localhost:4173/`.
+- **Current Status:** Fully operational and production ready.
+
+

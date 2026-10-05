@@ -32,6 +32,55 @@ StudentSphere is an open, student-centered academic learning and campus career p
 
 ---
 
+## 🔐 Authentication & Protected Content Architecture
+
+StudentSphere implements a robust, privacy-first authentication architecture powered by **Google Firebase Authentication**:
+
+### 1. Public vs Protected Routes
+- **Public Pages (100% Open Access - No forced login):**
+  - `/` & `/index.html`: Landing page explaining StudentSphere's academic mission and features.
+  - `/about` & `/about.html`: Platform mission, educational pillars, and moderation standards.
+  - `/features` & `/features.html`: Overview of notes, PYQs, interview debriefs, and job radar.
+  - `/contact` & `/contact.html`: Student support, DMCA agent contacts, and inquiry form.
+  - `/privacy` & `/privacy.html`: Comprehensive privacy policy.
+  - `/terms` & `/terms.html`: Terms & Conditions of service.
+  - `/cookie-policy` & `/cookie-policy.html`: Transparent cookie policy.
+  - `/login`, `/register`, `/verify-email`, `/forgot-password`: Authentication screens (strictly ad-free).
+- **Protected Student Features (Require Firebase Login + Verified Email):**
+  - Lecture Notes (`/notes`, `/notes/:id`, `/notes.html`)
+  - Solved Exam Papers (`/pyqs`, `/pyqs/:id`, `/pyqs.html`)
+  - Campus Placement Benchmarks (`/placements`, `/placements.html`)
+  - Recruiter Directory (`/companies`, `/companies/:id`, `/companies.html`)
+  - Interview Experiences (`/interviews`, `/interviews/:id`, `/interviews.html`)
+  - Job & Internship Radar (`/jobs`, `/jobs/:id`, `/jobs.html`)
+  - Contributor Leaderboard (`/leaderboard`, `/leaderboard.html`)
+  - User Dashboard (`/dashboard`, `/user/dashboard.html`)
+  - Student Profile (`/profile`, `/user/profile.html`)
+  - Settings (`/settings`, `/user/settings.html`)
+  - Notifications Center (`/notifications`, `/user/notifications.html`)
+  - Credits Ledger (`/credits`, `/user/credits.html`)
+  - Saved Jobs (`/saved-jobs`, `/user/saved-jobs.html`)
+  - Resource Upload Portals (`/notes/upload`, `/pyqs/upload`, `/upload-interview`, `/uploads`)
+- **Admin Moderation Portal (Requires Login + Verified Email + `role === 'admin'`):**
+  - `/admin/*`: Admin dashboard, broadcast hub, user directory, notes & PYQ moderation queues, and audit logs.
+
+### 2. Route Guard & UX Flow
+- **Non-blocking Auth Initialization:** While Firebase resolves auth state, an accessible "Checking your account..." loading spinner displays, preventing content flash.
+- **Login Required Card:** When an unauthenticated visitor attempts to access a protected feature, a clear "Login required" prompt displays with "Please login to continue." and buttons:
+  - `[Login]` → `/auth/login.html?redirect=<requestedUrl>`
+  - `[Create Account]` → `/auth/register.html?redirect=<requestedUrl>`
+- **Intended Destination Preservation:** The router encodes and preserves the exact target path and query string (e.g. `/jobs.html?location=Delhi&type=Internship`). Upon successful authentication and email verification, the user is redirected straight to their target URL.
+- **Mandatory Email Verification (No Fake Codes):** Accounts must have `user.emailVerified === true` before accessing protected features. If unverified, the user is routed to `/auth/verify-email.html` with:
+  - `I Have Verified` (calls `await reload(user)` via Firebase SDK)
+  - `Resend Verification Email` (dispatches official Firebase verification email)
+  - `Logout` (signs out and resets state)
+- **Dynamic Navbar:**
+  - *Logged-Out:* Displays Home, About, Features, Contact, Theme Toggle, `Login`, and `Register` buttons.
+  - *Logged-In:* Displays Home, Notes, PYQs, Placements, Jobs, Interviews, Dashboard, Theme Toggle, Notification Bell (with unread count badge), and User Menu dropdown (`Profile`, `Credits`, `Uploads`, `Settings`, `Admin Portal` [if admin], and `Logout`).
+- **Future Backend Token Verification:** Client requests include `Authorization: Bearer <Firebase ID Token>` obtained via `await currentUser.getIdToken()`, ensuring secure server-side validation.
+
+---
+
 ## 🚀 How to Run Locally
 
 ### Prerequisites

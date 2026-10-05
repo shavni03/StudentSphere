@@ -1,19 +1,12 @@
 /**
- * StudentSphere Firebase Authentication Layer
+ * StudentSphere Centralized Firebase Authentication Layer
  * 
- * Implements:
- * - Registration (Name, Email, Password, Confirm Password)
- * - Login (Email, Password)
- * - Logout
- * - Forgot Password (Password Reset Email)
- * - Email Verification (Verification Email & Protected Guard)
- * - Auth State Persistence
- * - Protected Page Guard (checkAuth)
- * 
- * Strict Security Rules:
- * - Passwords are NEVER saved in localStorage or state.
- * - Live Firebase Auth SDK is utilized when VITE_FIREBASE_API_KEY is supplied.
- * - Graceful fallback mode ensures immediate developer experience offline.
+ * Strict Architecture:
+ * - 100% Vanilla JavaScript (ES Modules)
+ * - Firebase Authentication SDK (Email/Password, Email Verification, Password Reset)
+ * - Protected Page Guard with Authentication Loading States
+ * - Zero plaintext password storage in localStorage or Supabase
+ * - Persistent redirect preservation (e.g. ?redirect=/notes.html)
  */
 
 import {
@@ -23,92 +16,128 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   updateProfile,
-  onAuthStateChanged
+  onAuthStateChanged,
+  reload
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from './firebase-config.js';
 import { appState } from './state.js';
 import { router } from './router.js';
 
-const STORAGE_KEY_AUTH_USER = 'studentsphere_auth_user';
-const STORAGE_KEY_VERIFIED = 'studentsphere_email_verified';
+export const STORAGE_KEY_AUTH_USER = 'studentsphere_auth_user';
+
+let authInitResolver = null;
+export const authInitPromise = new Promise((resolve) => {
+  authInitResolver = resolve;
+});
 
 /**
- * Get current stored auth user from cache/localStorage
+ * Wait until initial auth state is resolved by Firebase
  */
-export function getCurrentAuthUser() {
+export async function waitForAuthInit() {
+  if (appState.isAuthInitialized) return;
+  await authInitPromise;
+}
+
+/**
+ * Get current active user from Firebase or local state
+ */
+export function getCurrentUser() {
   if (isFirebaseConfigured && auth?.currentUser) {
     const u = auth.currentUser;
     return {
       uid: u.uid,
+      id: u.uid,
       name: u.displayName || u.email?.split('@')[0] || 'Student',
       email: u.email,
-      isEmailVerified: u.emailVerified,
-      role: appState.currentUser?.role || 'student'
+      isEmailVerified: Boolean(u.emailVerified),
+      role: u.email?.includes('admin') ? 'admin' : (appState.currentUser?.role || 'student'),
+      branch: appState.currentUser?.branch || 'CSE',
+      semester: appState.currentUser?.semester || '5',
+      credits: appState.currentUser?.credits ?? 100
     };
-  }
-
-  const stored = localStorage.getItem(STORAGE_KEY_AUTH_USER);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      // Synchronize verified flag from local verification step
-      const isVerified = localStorage.getItem(STORAGE_KEY_VERIFIED) === 'true';
-      return { ...parsed, isEmailVerified: isVerified || parsed.isEmailVerified };
-    } catch {
-      return null;
-    }
   }
 
   return appState.currentUser || null;
 }
 
+export function getCurrentAuthUser() {
+  return getCurrentUser();
+}
+
 /**
- * Register a new user
+ * Check if a user is currently logged in
  */
-export async function registerUser({ name, email, password, confirmPassword, branch = 'CSE', semester = '5' }) {
+export function isLoggedIn() {
+  return Boolean(getCurrentUser());
+}
+
+/**
+ * Check if the active user has a verified email
+ */
+export function isEmailVerified() {
+  const user = getCurrentUser();
+  return Boolean(user && user.isEmailVerified);
+}
+
+/**
+ * Register a new student account
+ */
+export async function register({ name, email, password, confirmPassword, termsAccepted = false, branch = 'CSE', semester = '5' }) {
   if (!name || !email || !password) {
     throw new Error('Please fill in all required fields.');
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    throw new Error('Please enter a valid email address.');
+  }
+
+  if (!termsAccepted) {
+    throw new Error('You must accept the Terms & Conditions and Privacy Policy to register.');
+  }
+
+  if (password.length < 6) {
+    throw new Error('Password must be at least 6 characters long.');
   }
 
   if (password !== confirmPassword) {
     throw new Error('Passwords do not match. Please verify your password confirmation.');
   }
 
-  if (password.length < 8) {
-    throw new Error('Password must be at least 8 characters long.');
-  }
-
   if (isFirebaseConfigured && auth) {
-    // Live Firebase Authentication
+    // 1. Create account via official Firebase SDK
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     const user = credential.user;
 
-    // Set display name in Firebase profile
+    // 2. Set user display name
     await updateProfile(user, { displayName: name });
 
-    // Dispatch official Firebase verification email
+    // 3. Dispatch official Firebase verification email
     await sendEmailVerification(user);
 
     const userProfile = {
       uid: user.uid,
       id: user.uid,
       name,
-      email,
+      email: user.email,
       branch,
       semester,
       role: 'student',
       isEmailVerified: false,
-      credits: 100 // Welcome bonus
+      credits: 100
     };
 
     localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(userProfile));
-    localStorage.setItem(STORAGE_KEY_VERIFIED, 'false');
     appState.currentUser = userProfile;
     appState.notify();
 
-    return { success: true, user: userProfile, message: 'Account created! Verification email dispatched.' };
+    return {
+      success: true,
+      user: userProfile,
+      message: 'Account created successfully. Please verify your email before accessing StudentSphere.'
+    };
   } else {
-    // Offline / Local Mock Flow
+    // Developer Fallback Mode when Firebase API key is unconfigured
     const newUid = `usr-${Date.now()}`;
     const userProfile = {
       uid: newUid,
@@ -123,58 +152,81 @@ export async function registerUser({ name, email, password, confirmPassword, bra
     };
 
     localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(userProfile));
-    localStorage.setItem(STORAGE_KEY_VERIFIED, 'false');
     appState.currentUser = userProfile;
     appState.notify();
 
-    return { success: true, user: userProfile, message: 'Account registered. Verification code sent via Resend API relay.' };
+    return {
+      success: true,
+      user: userProfile,
+      message: 'Account created successfully. Please verify your email before accessing StudentSphere.'
+    };
   }
 }
 
+export const registerUser = register;
+
 /**
- * Login user
+ * Log in with email and password
  */
-export async function loginUser(email, password) {
+export async function login(email, password) {
   if (!email || !password) {
     throw new Error('Email and password are required.');
   }
 
   if (isFirebaseConfigured && auth) {
-    const credential = await signInWithEmailAndPassword(auth, email, password);
-    const user = credential.user;
+    try {
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      const user = credential.user;
 
-    const userProfile = {
-      uid: user.uid,
-      id: user.uid,
-      name: user.displayName || email.split('@')[0],
-      email: user.email,
-      role: email.includes('admin') ? 'admin' : (appState.currentUser?.role || 'student'),
-      isEmailVerified: user.emailVerified,
-      branch: appState.currentUser?.branch || 'CSE',
-      semester: appState.currentUser?.semester || '5',
-      credits: appState.currentUser?.credits || 350
-    };
+      const userProfile = {
+        uid: user.uid,
+        id: user.uid,
+        name: user.displayName || email.split('@')[0],
+        email: user.email,
+        role: user.email?.includes('admin') ? 'admin' : (appState.currentUser?.role || 'student'),
+        isEmailVerified: Boolean(user.emailVerified),
+        branch: appState.currentUser?.branch || 'CSE',
+        semester: appState.currentUser?.semester || '5',
+        credits: appState.currentUser?.credits ?? 350
+      };
 
-    localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(userProfile));
-    localStorage.setItem(STORAGE_KEY_VERIFIED, String(user.emailVerified));
-    appState.currentUser = userProfile;
-    appState.notify();
+      localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(userProfile));
+      appState.currentUser = userProfile;
+      appState.notify();
 
-    return { success: true, user: userProfile };
+      return { success: true, user: userProfile };
+    } catch (err) {
+      let friendlyMsg = 'Login failed. Please check your credentials.';
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+        friendlyMsg = 'Invalid email or password. Please verify your login credentials.';
+      } else if (err.code === 'auth/too-many-requests') {
+        friendlyMsg = 'Access temporarily disabled due to many failed login attempts. Please reset your password or try again later.';
+      } else if (err.message) {
+        friendlyMsg = err.message;
+      }
+      throw new Error(friendlyMsg);
+    }
   } else {
-    // Offline / Local mock login
-    const isVerified = localStorage.getItem(STORAGE_KEY_VERIFIED) === 'true';
-    const userProfile = {
-      uid: 'usr-001',
-      id: 'usr-001',
-      name: email.split('@')[0].replace('.', ' '),
-      email,
-      role: email.includes('admin') ? 'admin' : (appState.currentUser?.role || 'student'),
-      isEmailVerified: isVerified || true,
-      branch: appState.currentUser?.branch || 'CSE',
-      semester: appState.currentUser?.semester || '5',
-      credits: appState.currentUser?.credits || 350
-    };
+    // Developer Fallback Mode
+    const stored = localStorage.getItem(STORAGE_KEY_AUTH_USER);
+    let userProfile = stored ? JSON.parse(stored) : null;
+
+    if (!userProfile) {
+      userProfile = {
+        uid: 'usr-001',
+        id: 'usr-001',
+        name: email.split('@')[0],
+        email,
+        role: email.includes('admin') ? 'admin' : 'student',
+        isEmailVerified: false,
+        branch: 'CSE',
+        semester: '5',
+        credits: 350
+      };
+    }
+
+    userProfile.email = email;
+    if (email.includes('admin')) userProfile.role = 'admin';
 
     localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(userProfile));
     appState.currentUser = userProfile;
@@ -184,96 +236,126 @@ export async function loginUser(email, password) {
   }
 }
 
+export const loginUser = login;
+
 /**
- * Logout user
+ * Log out user from Firebase and clear state
  */
-export async function logoutUser() {
+export async function logout() {
   if (isFirebaseConfigured && auth) {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn('SignOut error:', err);
+    }
   }
+
   localStorage.removeItem(STORAGE_KEY_AUTH_USER);
   appState.currentUser = null;
+  appState.isDropdownOpen = false;
+  appState.isUserMenuOpen = false;
   appState.notify();
-  router.navigate('/login');
+
+  // Redirect to public homepage
+  router.navigate('/');
 }
 
+export const logoutUser = logout;
+
 /**
- * Send password reset email
+ * Send password reset email via Firebase
  */
-export async function resetPassword(email) {
+export async function sendPasswordReset(email) {
   if (!email) {
     throw new Error('Please enter your registered email address.');
   }
 
   if (isFirebaseConfigured && auth) {
     await sendPasswordResetEmail(auth, email);
-    return { success: true, message: 'Password recovery email sent via Firebase.' };
+    return { success: true, message: 'Password recovery email sent via Firebase. Please check your inbox.' };
   }
 
-  return { success: true, message: 'Password reset link sent to your email.' };
+  return { success: true, message: 'Password reset instructions have been dispatched to your email address.' };
 }
+
+export const resetPassword = sendPasswordReset;
 
 /**
  * Resend verification email
  */
-export async function resendVerificationEmail() {
+export async function sendVerificationEmail() {
   if (isFirebaseConfigured && auth?.currentUser) {
     await sendEmailVerification(auth.currentUser);
-    return { success: true, message: 'New verification email dispatched.' };
+    return { success: true, message: 'Verification email sent. Please check your inbox.' };
   }
 
-  return { success: true, message: 'Verification OTP sent to your institutional email.' };
+  return { success: true, message: 'Verification email has been re-dispatched.' };
 }
 
+export const resendVerificationEmail = sendVerificationEmail;
+
 /**
- * Confirm verification code (for local / OTP verification screens)
+ * Reload active user state from Firebase to check updated emailVerified status
  */
-export function confirmEmailVerification() {
-  localStorage.setItem(STORAGE_KEY_VERIFIED, 'true');
-  if (appState.currentUser) {
-    appState.currentUser.isEmailVerified = true;
-    localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(appState.currentUser));
-    appState.notify();
+export async function reloadCurrentUser() {
+  if (isFirebaseConfigured && auth?.currentUser) {
+    await reload(auth.currentUser);
+    const u = auth.currentUser;
+    if (appState.currentUser) {
+      appState.currentUser.isEmailVerified = Boolean(u.emailVerified);
+      localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(appState.currentUser));
+      appState.notify();
+    }
+    return u;
   }
+
+  return getCurrentUser();
 }
 
 /**
- * Get active Firebase ID token for backend Authorization headers
+ * Retrieve active Firebase ID token for Authorization: Bearer <token>
  */
 export async function getAuthToken() {
   if (isFirebaseConfigured && auth?.currentUser) {
     return await auth.currentUser.getIdToken();
   }
-  // Fallback demo bearer token
-  return 'demo_firebase_id_token_' + (appState.currentUser?.id || 'usr-001');
+  return 'demo_firebase_id_token_' + (appState.currentUser?.id || 'usr-guest');
 }
 
 /**
- * Protected Page Guard
- * If user is not logged in: redirect to /login
- * If user is logged in but email is not verified: redirect to /verify-email
+ * Protected Route Guard
+ * Checks:
+ * 1. Is user logged in? (If no -> /auth/login.html?redirect=...)
+ * 2. Is email verified? (If no -> /auth/verify-email.html?redirect=...)
+ * 3. If admin route, is user admin?
  */
-export function checkAuth(options = { requireVerified: true, redirect: true }) {
-  const user = getCurrentAuthUser();
+export function checkAuth(options = { requireVerified: true, requireAdmin: false }) {
+  const currentPathWithQuery = window.location.pathname + window.location.search;
 
-  if (!user) {
-    if (options.redirect) {
-      router.navigate('/login');
-    }
-    return null;
+  if (!isLoggedIn()) {
+    const redirectUrl = `/auth/login.html?redirect=${encodeURIComponent(currentPathWithQuery)}`;
+    router.navigate(redirectUrl);
+    return false;
   }
+
+  const user = getCurrentUser();
 
   if (options.requireVerified && !user.isEmailVerified) {
-    if (options.redirect && window.location.pathname !== '/verify-email' && window.location.pathname !== '/verify-email.html') {
-      router.navigate('/verify-email');
-    }
-    return user;
+    const verifyUrl = `/auth/verify-email.html?redirect=${encodeURIComponent(currentPathWithQuery)}`;
+    router.navigate(verifyUrl);
+    return false;
   }
 
-  return user;
+  if (options.requireAdmin && user.role !== 'admin') {
+    return false;
+  }
+
+  return true;
 }
 
-// Subscribe to Firebase Auth state changes when configured
+export const requireAuth = checkAuth;
+
+// Subscribe to Firebase Auth state listener
 if (isFirebaseConfigured && auth) {
   onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -282,18 +364,24 @@ if (isFirebaseConfigured && auth) {
         id: user.uid,
         name: user.displayName || user.email?.split('@')[0] || 'Student',
         email: user.email,
-        isEmailVerified: user.emailVerified,
+        isEmailVerified: Boolean(user.emailVerified),
         role: user.email?.includes('admin') ? 'admin' : (appState.currentUser?.role || 'student'),
         branch: appState.currentUser?.branch || 'CSE',
         semester: appState.currentUser?.semester || '5',
-        credits: appState.currentUser?.credits || 350
+        credits: appState.currentUser?.credits ?? 350
       };
       localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(userProfile));
-      localStorage.setItem(STORAGE_KEY_VERIFIED, String(user.emailVerified));
       appState.currentUser = userProfile;
     } else {
       localStorage.removeItem(STORAGE_KEY_AUTH_USER);
+      appState.currentUser = null;
     }
+    appState.isAuthInitialized = true;
+    if (authInitResolver) authInitResolver();
     appState.notify();
   });
+} else {
+  // Offline / local development auth initialization
+  appState.isAuthInitialized = true;
+  if (authInitResolver) authInitResolver();
 }

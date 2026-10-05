@@ -1,68 +1,150 @@
 import { appState } from '../../state.js';
 import { createIcon } from '../../icons.js';
 import { router } from '../../router.js';
-import { getCurrentAuthUser, confirmEmailVerification, resendVerificationEmail } from '../../auth.js';
+import { getCurrentUser, isEmailVerified, reloadCurrentUser, sendVerificationEmail, logout } from '../../auth.js';
+
+let statusMessage = '';
+let statusType = ''; // 'info' | 'error' | 'success'
+let isChecking = false;
+let isResending = false;
 
 export function renderVerifyEmailPage() {
-  const user = getCurrentAuthUser() || appState.currentUser || { email: 'student@university.edu' };
+  const user = getCurrentUser() || appState.currentUser || { email: 'your-email@university.edu' };
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirectTarget = urlParams.get('redirect') || '/dashboard';
 
   return `
     <div style="min-height: calc(100vh - 180px); display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;">
-      <div class="card" style="width: 100%; max-width: 480px; padding: 2.5rem; text-align: center; background: rgba(17, 24, 39, 0.95); border: 1px solid var(--border-medium); box-shadow: var(--shadow-lg);">
-        <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); margin: 0 auto 1.25rem; display: flex; align-items: center; justify-content: center;">
-          ${createIcon('mail', 28, '#10b981')}
+      <div class="card" style="width: 100%; max-width: 480px; padding: 2.5rem; text-align: center; background: var(--bg-card); border: 1px solid var(--border-medium); box-shadow: var(--shadow-lg);">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(99, 102, 241, 0.15); margin: 0 auto 1.25rem; display: flex; align-items: center; justify-content: center;">
+          ${createIcon('mail', 30, '#6366f1')}
         </div>
 
-        <h2 style="font-size: 1.5rem; font-weight: 800; color: #fff;">Verify Your Institutional Email</h2>
-        <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0.75rem auto 1.5rem; line-height: 1.5;">
-          A verification link / OTP code has been dispatched to <br/><strong style="color: #fff;">${user.email}</strong>.
+        <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">
+          Please verify your email address
+        </h1>
+
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0.5rem auto 1.5rem; line-height: 1.6;">
+          A verification link has been sent to:<br/>
+          <strong style="color: var(--text-primary); font-size: 0.95rem; word-break: break-all;">${user.email}</strong>
         </p>
 
-        <form id="verify-email-form" style="max-width: 320px; margin: 0 auto;">
-          <div class="form-group" style="margin-bottom: 1.25rem;">
-            <label class="form-label" style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Enter Confirmation Code</label>
-            <input type="text" class="form-input" id="otp-input" maxlength="6" value="729104" style="text-align: center; font-size: 1.4rem; letter-spacing: 0.3em; font-family: monospace; font-weight: 700;" />
+        <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5;">
+          Please open your email client, click the confirmation link in the email from Firebase / StudentSphere, and then click below to continue.
+        </p>
+
+        ${statusMessage ? `
+          <div style="padding: 0.85rem 1rem; border-radius: var(--radius-md); font-size: 0.875rem; margin-bottom: 1.5rem; text-align: left; ${
+            statusType === 'error'
+              ? 'background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444;'
+              : statusType === 'success'
+              ? 'background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981;'
+              : 'background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.3); color: var(--primary);'
+          }">
+            ${statusMessage}
           </div>
+        ` : ''}
 
-          <button type="submit" id="verify-submit-btn" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-weight: 700; justify-content: center;">
-            Confirm Email & Proceed
+        <!-- 3 Required Actions -->
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <button 
+            type="button" 
+            id="btn-verified-check" 
+            class="btn btn-primary" 
+            style="width: 100%; padding: 0.8rem; font-weight: 700; font-size: 0.95rem; justify-content: center;"
+            ${isChecking ? 'disabled' : ''}
+          >
+            ${isChecking ? 'Checking status...' : 'I Have Verified'}
           </button>
-        </form>
 
-        <p style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-muted);">
-          Didn't receive email? <button id="resend-code-btn" type="button" style="background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; padding: 0;">Resend Link / Code</button>
-        </p>
+          <button 
+            type="button" 
+            id="btn-resend-verification" 
+            class="btn btn-outline" 
+            style="width: 100%; padding: 0.75rem; font-weight: 600; font-size: 0.9rem; justify-content: center;"
+            ${isResending ? 'disabled' : ''}
+          >
+            ${isResending ? 'Sending email...' : 'Resend Verification Email'}
+          </button>
+
+          <button 
+            type="button" 
+            id="btn-verify-logout" 
+            class="btn btn-ghost" 
+            style="width: 100%; padding: 0.6rem; font-size: 0.85rem; color: var(--text-muted); justify-content: center;"
+          >
+            Logout
+          </button>
+        </div>
+
+        <input type="hidden" id="redirect-target-input" value="${redirectTarget}" />
       </div>
     </div>
   `;
 }
 
 export function bindVerifyEmailEvents(container) {
-  const form = container.querySelector('#verify-email-form');
-  const resendBtn = container.querySelector('#resend-code-btn');
+  const verifiedBtn = container.querySelector('#btn-verified-check');
+  const resendBtn = container.querySelector('#btn-resend-verification');
+  const logoutBtn = container.querySelector('#btn-verify-logout');
+  const redirectInput = container.querySelector('#redirect-target-input');
+  const redirectTarget = redirectInput?.value || '/dashboard';
 
-  if (form) {
-    form.onsubmit = (e) => {
-      e.preventDefault();
-      confirmEmailVerification();
-      alert('Email verified successfully! Welcome to StudentSphere.');
-      router.navigate('/dashboard');
+  if (verifiedBtn) {
+    verifiedBtn.onclick = async () => {
+      isChecking = true;
+      statusMessage = '';
+      router.resolve();
+
+      try {
+        await reloadCurrentUser();
+
+        if (isEmailVerified()) {
+          statusMessage = 'Email verified successfully! Redirecting...';
+          statusType = 'success';
+          isChecking = false;
+          router.resolve();
+          setTimeout(() => {
+            router.navigate(redirectTarget);
+          }, 600);
+        } else {
+          statusMessage = 'Your email is not verified yet. Please check your inbox and click the verification link.';
+          statusType = 'error';
+          isChecking = false;
+          router.resolve();
+        }
+      } catch (err) {
+        statusMessage = err.message || 'Unable to check verification status. Please try again.';
+        statusType = 'error';
+        isChecking = false;
+        router.resolve();
+      }
     };
   }
 
   if (resendBtn) {
     resendBtn.onclick = async () => {
-      resendBtn.disabled = true;
-      resendBtn.textContent = 'Sending...';
+      isResending = true;
+      statusMessage = '';
+      router.resolve();
+
       try {
-        const res = await resendVerificationEmail();
-        alert(res?.message || 'Verification message resent!');
+        const res = await sendVerificationEmail();
+        statusMessage = res?.message || 'Verification email has been sent. Please check your inbox.';
+        statusType = 'info';
       } catch (err) {
-        alert(err.message || 'Failed to resend verification.');
+        statusMessage = err.message || 'Failed to resend verification email.';
+        statusType = 'error';
       } finally {
-        resendBtn.disabled = false;
-        resendBtn.textContent = 'Resend Link / Code';
+        isResending = false;
+        router.resolve();
       }
+    };
+  }
+
+  if (logoutBtn) {
+    logoutBtn.onclick = async () => {
+      await logout();
     };
   }
 }

@@ -121,7 +121,7 @@ class Router {
     const notFoundHandler = this.routes.find(r => r.path === '*');
     if (notFoundHandler) {
       notFoundHandler.handler({}, this.getQueryParams());
-    } else {
+    } else if (pathname !== '/') {
       this.navigate('/');
     }
   }
