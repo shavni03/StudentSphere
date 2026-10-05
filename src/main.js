@@ -159,18 +159,17 @@ async function renderProtectedPage(renderFn, bindFn, pageTitle, options = {}) {
     return;
   }
 
-  // 3. Email Verification Check
-  if (!isEmailVerified()) {
-    const targetRedirect = currentPathWithQuery.startsWith('/auth/') ? '/' : currentPathWithQuery;
-    const verifyUrl = `/auth/verify-email.html?redirect=${encodeURIComponent(targetRedirect)}`;
-    router.navigate(verifyUrl);
-    return;
-  }
-
-  // 4. Admin Role Check via Firestore users/{uid} document
+  // 3. Admin Role Check or Student Email Verification Check
   if (options.isAdmin) {
     const adminCheck = await verifyAdminStatus();
     if (!adminCheck.allowed) {
+      if (adminCheck.status === 'EMAIL_UNVERIFIED') {
+        const targetRedirect = currentPathWithQuery.startsWith('/auth/') ? '/' : currentPathWithQuery;
+        const verifyUrl = `/auth/verify-email.html?redirect=${encodeURIComponent(targetRedirect)}`;
+        router.navigate(verifyUrl);
+        return;
+      }
+
       const heading = adminCheck.status === 'PROFILE_NOT_FOUND'
         ? 'User Profile Not Found'
         : adminCheck.status === 'FIRESTORE_ERROR'
@@ -202,6 +201,14 @@ async function renderProtectedPage(renderFn, bindFn, pageTitle, options = {}) {
           </div>
         </div>
       `, null, heading, { isAdmin: true });
+      return;
+    }
+  } else {
+    // Standard Student protected page -> requires verified email
+    if (!isEmailVerified()) {
+      const targetRedirect = currentPathWithQuery.startsWith('/auth/') ? '/' : currentPathWithQuery;
+      const verifyUrl = `/auth/verify-email.html?redirect=${encodeURIComponent(targetRedirect)}`;
+      router.navigate(verifyUrl);
       return;
     }
   }

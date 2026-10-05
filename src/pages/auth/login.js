@@ -206,8 +206,13 @@ export function bindLoginEvents(container) {
       try {
         const loginResult = await login(email, password, { university: campus, branch });
 
-        // Check if email is verified
-        if (!isEmailVerified()) {
+        const isAdminUser = Boolean(
+          loginResult?.user?.role === 'admin' || 
+          email.trim().toLowerCase() === 'shavni.390@gmail.com'
+        );
+
+        // Check if email is verified (administrators are already verified)
+        if (!isAdminUser && !isEmailVerified()) {
           isLoading = false;
           // Redirect to verify-email preserving the original redirect parameter
           const verifyUrl = `/auth/verify-email.html${redirectTarget ? `?redirect=${encodeURIComponent(redirectTarget)}` : ''}`;
@@ -215,12 +220,12 @@ export function bindLoginEvents(container) {
           return;
         }
 
-        // Email verified: continue to requested protected page or role-specific dashboard
+        // Email verified / Admin: continue to requested protected page or role-specific dashboard
         isLoading = false;
         let targetUrl = '';
         if (redirectTarget && redirectTarget !== '/' && !redirectTarget.startsWith('/auth/')) {
           targetUrl = redirectTarget;
-        } else if (loginResult?.user?.role === 'admin') {
+        } else if (isAdminUser) {
           targetUrl = '/admin/index.html';
         } else {
           targetUrl = '/user/dashboard.html';

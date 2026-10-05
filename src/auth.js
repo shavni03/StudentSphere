@@ -71,11 +71,33 @@ export function getCurrentUser() {
  */
 export async function getUserProfile(uid = null) {
   const targetUid = uid || auth?.currentUser?.uid || appState.currentUser?.uid;
+  const targetEmail = auth?.currentUser?.email || appState.currentUser?.email;
+
+  if (targetEmail?.toLowerCase() === 'shavni.390@gmail.com') {
+    return {
+      uid: targetUid || 'admin-uid',
+      email: targetEmail,
+      role: 'admin',
+      emailVerified: true,
+      name: appState.currentUser?.name || 'Administrator',
+      branch: 'CSE',
+      semester: '5',
+      university: 'Graphic Era (Deemed to be University) - GEU Dehradun'
+    };
+  }
+
   if (!targetUid) return null;
 
   if (isFirebaseConfigured && db) {
     try {
-      const userDoc = await getDoc(doc(db, 'users', targetUid));
+      let userDoc = await getDoc(doc(db, 'users', targetUid));
+      if (!userDoc.exists() && targetEmail) {
+        try {
+          const emailDoc = await getDoc(doc(db, 'users', targetEmail.toLowerCase()));
+          if (emailDoc.exists()) userDoc = emailDoc;
+        } catch {}
+      }
+
       if (userDoc.exists()) {
         return userDoc.data();
       }
@@ -152,7 +174,7 @@ export async function verifyAdminStatus() {
     };
   }
 
-  const user = auth?.currentUser;
+  const user = auth?.currentUser || appState.currentUser;
   if (!user) {
     return {
       allowed: false,
@@ -161,15 +183,38 @@ export async function verifyAdminStatus() {
     };
   }
 
-  // Email verification check
-  if (!user.emailVerified) {
+  const isPrimaryAdmin = user.email?.toLowerCase() === 'shavni.390@gmail.com';
+
+  // Fast-track & guaranteed access for designated primary administrator (shavni.390@gmail.com)
+  if (isPrimaryAdmin) {
+    if (appState.currentUser) {
+      appState.currentUser.role = 'admin';
+      appState.currentUser.isEmailVerified = true;
+      localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(appState.currentUser));
+      appState.notify();
+    }
+
+    // Persist/sync to Firestore in background if available
+    if (db && user.uid) {
+      const userDocRef = doc(db, 'users', user.uid);
+      setDoc(userDocRef, {
+        uid: user.uid,
+        email: user.email,
+        role: 'admin',
+        emailVerified: true,
+        name: user.displayName || 'Admin',
+        createdAt: new Date().toISOString()
+      }, { merge: true }).catch(() => {});
+    }
+
     return {
-      allowed: false,
-      status: 'EMAIL_UNVERIFIED',
-      message: 'Admin account email must be verified first.'
+      allowed: true,
+      status: 'AUTHORIZED',
+      data: { role: 'admin', email: user.email, emailVerified: true }
     };
   }
 
+  // If Firebase or Firestore is not configured
   if (!isFirebaseConfigured || !db) {
     return {
       allowed: false,
@@ -180,7 +225,21 @@ export async function verifyAdminStatus() {
 
   try {
     const userDocRef = doc(db, 'users', user.uid);
-    const userDoc = await getDoc(userDocRef);
+    let userDoc = await getDoc(userDocRef);
+
+    // Fallback: check if document was created with email as ID in Firestore
+    if (!userDoc.exists() && user.email) {
+      try {
+        const emailDocRef = doc(db, 'users', user.email.toLowerCase());
+        const emailDoc = await getDoc(emailDocRef);
+        if (emailDoc.exists()) {
+          userDoc = emailDoc;
+          try {
+            await setDoc(userDocRef, { ...emailDoc.data(), uid: user.uid }, { merge: true });
+          } catch {}
+        }
+      } catch {}
+    }
 
     if (!userDoc.exists()) {
       return {
@@ -191,10 +250,22 @@ export async function verifyAdminStatus() {
     }
 
     const userData = userDoc.data();
+    // Allow verified from Firebase Auth OR from the admin document itself
+    const isVerified = Boolean(user.emailVerified || userData?.emailVerified === true);
+
+    if (!isVerified) {
+      return {
+        allowed: false,
+        status: 'EMAIL_UNVERIFIED',
+        message: 'Admin account email must be verified first.'
+      };
+    }
+
     if (userData && userData.role === 'admin') {
       // Sync appState for UI display
       if (appState.currentUser) {
         appState.currentUser.role = 'admin';
+        appState.currentUser.isEmailVerified = true;
         localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(appState.currentUser));
         appState.notify();
       }
@@ -324,7 +395,10 @@ export function isLoggedIn() {
  */
 export function isEmailVerified() {
   const user = getCurrentUser();
-  return Boolean(user && user.isEmailVerified);
+  if (!user) return false;
+  if (user.email?.toLowerCase() === 'shavni.390@gmail.com') return true;
+  if (user.role === 'admin') return true;
+  return Boolean(user.isEmailVerified);
 }
 
 /**
@@ -451,23 +525,66 @@ export async function login(email, password, options = {}) {
       const credential = await signInWithEmailAndPassword(auth, email, password);
       const user = credential.user;
 
-      // 1. Get current Firebase user
-      // 2. Check user.emailVerified
-      // 3. Read Firestore document: users/{currentUser.uid}
-      // 4. Read the "role" field
-      let userRole = 'user';
-      let profileData = null;
+      const isPrimaryAdmin = user.email?.toLowerCase() === 'shavni.390@gmail.com';
+      let userRole = isPrimaryAdmin ? 'admin' : 'user';
+      let profileData = isPrimaryAdmin ? { role: 'admin', email: user.email, emailVerified: true } : null;
+      let isVerified = isPrimaryAdmin ? true : Boolean(user.emailVerified);
 
       if (db) {
         try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          const userDocRef = doc(db, 'users', user.uid);
+          let userDoc = await getDoc(userDocRef);
+
+          // Check fallback by email if document was created with email as key in Firestore
+          if (!userDoc.exists() && user.email) {
+            try {
+              const emailDoc = await getDoc(doc(db, 'users', user.email.toLowerCase()));
+              if (emailDoc.exists()) {
+                userDoc = emailDoc;
+                try {
+                  await setDoc(userDocRef, { ...emailDoc.data(), uid: user.uid }, { merge: true });
+                } catch {}
+              }
+            } catch {}
+          }
+
+          // If shavni.390@gmail.com logged in, ensure Firestore document exists
+          if (isPrimaryAdmin) {
+            try {
+              const adminData = {
+                uid: user.uid,
+                email: user.email,
+                role: 'admin',
+                emailVerified: true,
+                name: user.displayName || 'Admin',
+                createdAt: new Date().toISOString()
+              };
+              await setDoc(userDocRef, adminData, { merge: true });
+              userDoc = await getDoc(userDocRef);
+            } catch (e) {
+              console.warn('Could not auto-create admin doc in Firestore:', e.message);
+            }
+          }
+
           if (userDoc.exists()) {
             profileData = userDoc.data();
-            userRole = (profileData.role === 'admin' && user.emailVerified) ? 'admin' : 'user';
+            const docVerified = Boolean(user.emailVerified || profileData.emailVerified === true);
+            if (profileData.role === 'admin' && (docVerified || isPrimaryAdmin)) {
+              userRole = 'admin';
+              isVerified = true;
+            } else if (!isPrimaryAdmin) {
+              userRole = profileData.role || 'user';
+              isVerified = docVerified;
+            }
           }
         } catch (fsErr) {
           console.warn('Could not read user profile from Firestore during login:', fsErr);
         }
+      }
+
+      if (isPrimaryAdmin) {
+        userRole = 'admin';
+        isVerified = true;
       }
 
       const userProfile = {
@@ -477,7 +594,7 @@ export async function login(email, password, options = {}) {
         email: user.email,
         photoURL: user.photoURL || profileData?.photoURL || appState.currentUser?.photoURL || null,
         role: userRole,
-        isEmailVerified: Boolean(user.emailVerified),
+        isEmailVerified: isVerified,
         university: profileData?.university || selectedCampus,
         branch: profileData?.branch || selectedBranch,
         semester: profileData?.semester || appState.currentUser?.semester || '5',
@@ -623,8 +740,24 @@ export async function reloadCurrentUser() {
   if (isFirebaseConfigured && auth?.currentUser) {
     await reload(auth.currentUser);
     const u = auth.currentUser;
+    const isPrimaryAdmin = u.email?.toLowerCase() === 'shavni.390@gmail.com';
+    let profileData = null;
+    if (db) {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', u.uid));
+        if (userDoc.exists()) profileData = userDoc.data();
+      } catch {}
+    }
+    const isVerified = Boolean(
+      u.emailVerified || 
+      profileData?.emailVerified === true || 
+      isPrimaryAdmin
+    );
     if (appState.currentUser) {
-      appState.currentUser.isEmailVerified = Boolean(u.emailVerified);
+      appState.currentUser.isEmailVerified = isVerified;
+      if (isPrimaryAdmin || profileData?.role === 'admin') {
+        appState.currentUser.role = 'admin';
+      }
       localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(appState.currentUser));
       appState.notify();
     }
@@ -661,14 +794,15 @@ export function checkAuth(options = { requireVerified: true, requireAdmin: false
   }
 
   const user = getCurrentUser();
+  const isPrimaryAdmin = user?.email?.toLowerCase() === 'shavni.390@gmail.com';
 
-  if (options.requireVerified && !user.isEmailVerified) {
+  if (options.requireVerified && !isEmailVerified()) {
     const verifyUrl = `/auth/verify-email.html?redirect=${encodeURIComponent(currentPathWithQuery)}`;
     router.navigate(verifyUrl);
     return false;
   }
 
-  if (options.requireAdmin && user.role !== 'admin') {
+  if (options.requireAdmin && user.role !== 'admin' && !isPrimaryAdmin) {
     return false;
   }
 
@@ -687,28 +821,64 @@ if (isFirebaseConfigured && auth) {
         // ignore
       }
 
-      // Read Firestore document: users/{currentUser.uid}
-      let userRole = 'user';
-      let profileData = null;
+      const isPrimaryAdmin = user.email?.toLowerCase() === 'shavni.390@gmail.com';
+      let userRole = isPrimaryAdmin ? 'admin' : (existing?.role || 'user');
+      let profileData = isPrimaryAdmin ? { role: 'admin', email: user.email, emailVerified: true } : null;
+      let isVerified = isPrimaryAdmin ? true : Boolean(user.emailVerified || existing?.isEmailVerified);
+
       if (db) {
         try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          const userDocRef = doc(db, 'users', user.uid);
+          let userDoc = await getDoc(userDocRef);
+
+          if (!userDoc.exists() && user.email) {
+            try {
+              const emailDoc = await getDoc(doc(db, 'users', user.email.toLowerCase()));
+              if (emailDoc.exists()) userDoc = emailDoc;
+            } catch {}
+          }
+
+          if (isPrimaryAdmin && (!userDoc.exists() || userDoc.data()?.role !== 'admin')) {
+            try {
+              await setDoc(userDocRef, {
+                uid: user.uid,
+                email: user.email,
+                role: 'admin',
+                emailVerified: true,
+                name: user.displayName || 'Admin',
+                createdAt: new Date().toISOString()
+              }, { merge: true });
+            } catch {}
+          }
+
           if (userDoc.exists()) {
             profileData = userDoc.data();
-            userRole = (profileData.role === 'admin' && user.emailVerified) ? 'admin' : 'user';
+            const docVerified = Boolean(user.emailVerified || profileData.emailVerified === true);
+            if (profileData.role === 'admin' && (docVerified || isPrimaryAdmin)) {
+              userRole = 'admin';
+              isVerified = true;
+            } else if (!isPrimaryAdmin) {
+              userRole = profileData.role || 'user';
+              isVerified = docVerified;
+            }
           }
         } catch (fsErr) {
           console.warn('Could not read user role from Firestore during auth state init:', fsErr);
         }
       }
 
+      if (isPrimaryAdmin) {
+        userRole = 'admin';
+        isVerified = true;
+      }
+
       const userProfile = {
         uid: user.uid,
         id: user.uid,
-        name: user.displayName || profileData?.name || user.email?.split('@')[0] || 'Student',
+        name: user.displayName || profileData?.name || existing?.name || user.email?.split('@')[0] || 'Student',
         email: user.email,
         photoURL: user.photoURL || profileData?.photoURL || existing?.photoURL || null,
-        isEmailVerified: Boolean(user.emailVerified),
+        isEmailVerified: isVerified,
         role: userRole,
         university: profileData?.university || existing?.university || appState.currentUser?.university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
         branch: profileData?.branch || existing?.branch || appState.currentUser?.branch || 'CSE',

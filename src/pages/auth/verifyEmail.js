@@ -109,8 +109,12 @@ export function bindVerifyEmailEvents(container) {
           statusType = 'success';
           isChecking = false;
           router.resolve();
+          const activeUser = getCurrentUser();
+          const finalDest = (redirectTarget && redirectTarget !== '/dashboard' && redirectTarget !== '/')
+            ? redirectTarget
+            : (activeUser?.role === 'admin' ? '/admin/index.html' : '/user/dashboard.html');
           setTimeout(() => {
-            router.navigate(redirectTarget);
+            router.navigate(finalDest);
           }, 600);
         } else {
           statusMessage = 'Your email is not verified yet. Please check your inbox and click the verification link.';

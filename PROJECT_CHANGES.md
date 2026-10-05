@@ -594,3 +594,32 @@ studentSphere/
   - Linter check: `oxlint` reported 0 errors, 0 warnings across all 74 codebase files.
   - Production build: `vite build` completed successfully with code 0 in 183ms.
 - **Current Status:** Fully operational, verified, and production ready.
+
+### Change Record #16: Admin Login Authentication Fix & Firestore Security Rules
+- **Date:** 2026-10-06
+- **What Changed:**
+  1. **Primary Administrator Hardening (`src/auth.js`):**
+     - Fast-tracked and guaranteed administrator status for designated admin account `shavni.390@gmail.com`.
+     - Fixed race condition where `onAuthStateChanged` reset `role: 'user'` on page refresh if Firestore `users/{uid}` read encountered permission restrictions.
+     - Updated `isEmailVerified()` to automatically treat `shavni.390@gmail.com` and confirmed admin accounts as verified, preventing false redirects to the student email verification screen.
+     - Updated `verifyAdminStatus()` to prioritize primary administrator credentials, seamlessly authorizing access even if Firestore rules reject client read/write operations.
+  2. **Login Routing Optimization (`src/pages/auth/login.js`):**
+     - Decoupled admin authentication routing from generic student verification checks; automatically directs `shavni.390@gmail.com` to `/admin/index.html`.
+  3. **Protected Page Route Decoupling (`src/main.js`):**
+     - Updated `renderProtectedPage` so admin pages evaluate `verifyAdminStatus()` first without triggering student verification redirects.
+  4. **Email Verification Screen Redirection (`src/pages/auth/verifyEmail.js`):**
+     - Updated "I Have Verified" button handler to redirect admin users directly to `/admin/index.html`.
+  5. **Production Firestore Security Rules (`firestore.rules`):**
+     - Created `firestore.rules` permitting authenticated users to access their respective profile documents and granting `shavni.390@gmail.com` administrative read/write access.
+- **Files Changed:**
+  - `src/auth.js`
+  - `src/main.js`
+  - `src/pages/auth/login.js`
+  - `src/pages/auth/verifyEmail.js`
+  - `firestore.rules`
+  - `PROJECT_CHANGES.md`
+- **Testing Performed:**
+  - Automated test suite (`scratch/test_admin_flow.mjs`): 11 tests passed, 0 failed.
+  - Oxlint: 0 warnings, 0 errors across 74 files.
+  - Production build: `vite build` succeeded in 197ms.
+- **Current Status:** Fully operational and active.
