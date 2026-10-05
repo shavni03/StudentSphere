@@ -57,6 +57,11 @@ class Router {
   }
 
   addRoute(path, handler) {
+    if (path === '*') {
+      this.routes.push({ path, regex: /^.*$/, paramNames: [], handler });
+      return this;
+    }
+
     // Convert path pattern e.g. /notes/:id into regex
     const paramNames = [];
     const regexPath = path.replace(/:([a-zA-Z0-9_]+)/g, (_, paramName) => {
@@ -98,6 +103,7 @@ class Router {
     const pathname = this.normalizePath(rawPathname);
 
     for (const route of this.routes) {
+      if (route.path === '*') continue;
       const match = pathname.match(route.regex);
       if (match) {
         const params = {};
