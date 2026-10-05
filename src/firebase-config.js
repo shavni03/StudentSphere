@@ -7,6 +7,7 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
 const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' ? process.env : {});
@@ -25,12 +26,14 @@ export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseCon
 
 let appInstance = null;
 let authInstance = null;
+let dbInstance = null;
 let analyticsInstance = null;
 
 if (isFirebaseConfigured) {
   try {
     appInstance = getApps().length ? getApp() : initializeApp(firebaseConfig);
     authInstance = getAuth(appInstance);
+    dbInstance = getFirestore(appInstance);
 
     // Initialize Analytics if supported in the browser
     if (typeof window !== 'undefined') {
@@ -51,4 +54,5 @@ if (isFirebaseConfigured) {
 
 export const app = appInstance;
 export const auth = authInstance;
+export const db = dbInstance;
 export const analytics = analyticsInstance;

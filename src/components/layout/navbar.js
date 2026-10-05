@@ -55,6 +55,11 @@ export function renderNavbar() {
     { label: 'Contact', path: '/contact' }
   ];
 
+  // Show "Admin Dashboard" only for role === 'admin'
+  if (user && user.role === 'admin') {
+    links.push({ label: 'Admin Dashboard', path: '/admin' });
+  }
+
   return `
     <header class="navbar-header" style="position: sticky; top: 0; z-index: 100; background: var(--bg-glass); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-subtle);">
       <div class="container" style="display: flex; align-items: center; justify-content: space-between; height: 70px;">
@@ -241,7 +246,7 @@ export function renderNavbar() {
                     </a>
                     ${user.role === 'admin' ? `
                       <a href="/admin" data-link class="btn-ghost" style="padding: 0.45rem 0.65rem; font-size: 0.82rem; justify-content: flex-start; color: #f87171; text-decoration: none;">
-                        ${createIcon('shield', 14, '#f87171')} Admin Moderation Suite
+                        ${createIcon('shield', 14, '#f87171')} Admin Dashboard
                       </a>
                     ` : ''}
                   </div>

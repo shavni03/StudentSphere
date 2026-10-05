@@ -204,7 +204,7 @@ export function bindLoginEvents(container) {
       }
 
       try {
-        await login(email, password, { university: campus, branch });
+        const loginResult = await login(email, password, { university: campus, branch });
 
         // Check if email is verified
         if (!isEmailVerified()) {
@@ -215,9 +215,17 @@ export function bindLoginEvents(container) {
           return;
         }
 
-        // Email verified: continue to requested protected page or dashboard
+        // Email verified: continue to requested protected page or role-specific dashboard
         isLoading = false;
-        const targetUrl = redirectTarget || '/dashboard';
+        let targetUrl = '';
+        if (redirectTarget && redirectTarget !== '/' && !redirectTarget.startsWith('/auth/')) {
+          targetUrl = redirectTarget;
+        } else if (loginResult?.user?.role === 'admin') {
+          targetUrl = '/admin/index.html';
+        } else {
+          targetUrl = '/user/dashboard.html';
+        }
+
         router.navigate(targetUrl);
       } catch (err) {
         showError(err.message || 'Login failed. Please verify your credentials.');

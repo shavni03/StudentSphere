@@ -14,7 +14,7 @@
 
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-const { getAuth } = require('../src/firebaseAdmin');
+const { getAuth, getFirestore } = require('../src/firebaseAdmin');
 
 const TARGET_ADMIN_EMAIL = (process.env.ADMIN_FIREBASE_EMAIL || 'shavni.390@gmail.com').trim().toLowerCase();
 
@@ -87,6 +87,19 @@ async function run() {
   // Safety Check 3: Idempotent verification
   const currentClaims = userRecord.customClaims || {};
   if (currentClaims.admin === true) {
+    // Ensure Firestore document is in sync even if claim was previously set
+    try {
+      const firestore = getFirestore();
+      await firestore.collection('users').doc(userRecord.uid).set({
+        uid: userRecord.uid,
+        email: userRecord.email,
+        role: 'admin',
+        emailVerified: true
+      }, { merge: true });
+    } catch {
+      // ignore
+    }
+
     console.log('-------------------------');
     console.log('User is already an administrator.');
     console.log(`Email: ${userRecord.email}`);
@@ -105,6 +118,20 @@ async function run() {
 
   await auth.setCustomUserClaims(userRecord.uid, updatedClaims);
 
+  // Synchronize Firestore users/{uid} document with role: "admin"
+  try {
+    const firestore = getFirestore();
+    await firestore.collection('users').doc(userRecord.uid).set({
+      uid: userRecord.uid,
+      email: userRecord.email,
+      role: 'admin',
+      emailVerified: true
+    }, { merge: true });
+    console.log(`Firestore document users/${userRecord.uid} updated with role: "admin".`);
+  } catch (fsErr) {
+    console.warn('Warning: Could not update Firestore users document:', fsErr.message);
+  }
+
   // Success Output
   console.log('-------------------------');
   console.log(`Email: ${userRecord.email}`);
@@ -112,7 +139,7 @@ async function run() {
   console.log(`Role: ADMIN`);
   console.log(`Status: SUCCESS`);
   console.log('-------------------------');
-  console.log('Custom claim { admin: true } has been securely assigned.');
+  console.log('Custom claim { admin: true } and Firestore role: "admin" have been securely assigned.');
   console.log('The user can now sign in or refresh their token to access /admin/ routes.');
 }
 

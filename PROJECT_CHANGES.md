@@ -517,3 +517,80 @@ studentSphere/
   - Production build: `vite build` completed cleanly with code 0 (129ms).
   - Test suites: 6/6 admin custom claims tests passed; 35/35 auth guard and registration/login tests passed.
 - **Current Status:** Fully operational, secure, and production ready.
+
+### Change Record #15: Firestore Admin Role Integration & Route Protection
+- **Date:** 2026-10-06
+- **Architecture & Security Rules Enforced:**
+  - Preserved 100% Vanilla JavaScript, HTML5, and CSS3 architecture. No React, Next.js, Vue, or Angular.
+  - No fake admin systems using `localStorage.role`, `sessionStorage.role`, URL queries, or hardcoded emails/UIDs.
+  - Role authority is read directly from Firestore: collection `users`, document ID `currentUser.uid`.
+  - Admin access is granted strictly when `user.emailVerified === true` and Firestore document field `role === "admin"`.
+  - Normal users have `role === "user"` and are blocked from admin routes.
+  - When Firestore is unavailable or fails, admin access is strictly withheld (no automatic elevation).
+- **Changes Made:**
+  1. **Firebase Configuration (`src/firebase-config.js`):**
+     - Initialized Firestore database instance using the existing Firebase App: `db = getFirestore(appInstance)`.
+     - Exported `db` for centralized use across authentication and user management without duplicating app instances.
+  2. **Centralized Authentication & Firestore Role Flow (`src/auth.js` & `js/auth.js`):**
+     - `getUserProfile(uid)`: Retrieves `users/{uid}` document from Firestore.
+     - `verifyAdminStatus()`: Executes full cryptographic and document check:
+       1. Verifies Firebase Auth session exists.
+       2. Verifies `user.emailVerified === true`.
+       3. Reads `users/{user.uid}` from Firestore.
+       4. Checks `role === "admin"`.
+       5. Returns granular status codes and specific error messages:
+          - If document missing: `"User profile not found."` (`PROFILE_NOT_FOUND`)
+          - If role is not admin: `"Access Denied. Administrator permissions are required."` (`NOT_ADMIN`)
+          - If request fails / offline: `"Unable to verify administrator permissions. Please try again."` (`FIRESTORE_ERROR`)
+     - `isAdmin()`: Returns boolean `true` strictly when `verifyAdminStatus()` confirms verified admin role in Firestore.
+     - `requireAuth()` & `requireVerifiedEmail()`: Reusable guards with URL-encoded redirect preservation.
+     - `requireAdmin()`: Awaits auth initialization and requires verified admin status.
+     - `login()`: Queries `users/{user.uid}` on login to determine whether user is an administrator or normal user, synchronizing state accordingly.
+     - `register()`: Automatically creates the initial Firestore document in `users/{user.uid}` with `role: "user"` and `emailVerified: false`.
+     - `onAuthStateChanged()`: Asynchronously reads Firestore `users/{user.uid}` to ensure role and state persist accurately across refreshes.
+     - `logout()`: Clears active session and state completely.
+     - All functions re-exported through `js/auth.js`.
+  3. **Admin Page Route Protection (`src/main.js`):**
+     - Protected all 12 admin modules: `/admin/index.html`, `/admin/users.html`, `/admin/notes.html`, `/admin/pyqs.html`, `/admin/interviews.html`, `/admin/companies.html`, `/admin/jobs.html`, `/admin/reports.html`, `/admin/credits.html`, `/admin/notifications.html`, `/admin/analytics.html`, `/admin/settings.html`.
+     - Enforced verification pipeline in `renderProtectedPage` before rendering admin shell:
+       `Firebase login` -> `Email verified` -> `Firestore users/{uid}` -> `role === "admin"`.
+     - Displays specific error states with exact messages ("User profile not found.", "Access Denied. Administrator permissions are required.", "Unable to verify administrator permissions. Please try again.").
+     - Does not render admin content before check finishes or if any step fails.
+  4. **Dynamic Navbar Updates (`src/components/layout/navbar.js`):**
+     - For admin (`role === "admin"`): Displays "Admin Dashboard" in desktop navigation and in user profile dropdown menu.
+     - For normal user (`role === "user"`): Hides "Admin Dashboard" entirely.
+     - For logged-out user: Displays "Login" and "Register" actions.
+  5. **Role-Based Login Redirects (`src/pages/auth/login.js` & `src/router.js`):**
+     - After login:
+       - If `role === "admin"`: redirects to `/admin/index.html` (or preserved destination).
+       - If `role === "user"`: redirects to `/user/dashboard.html` (or preserved destination).
+     - Configured router aliasing in `src/router.js` so `/user/dashboard.html` and `/user/dashboard` route seamlessly to `/dashboard`, and `/admin/index.html` routes to `/admin`.
+  6. **Backend Scripts Synchronization (`backend/scripts/`):**
+     - Updated `backend/src/firebaseAdmin.js` to export `getFirestore()`.
+     - Updated `makeAdmin.js` to write/merge `{ uid, email, role: 'admin', emailVerified: true }` in Firestore `users/{uid}` alongside the custom claim.
+     - Updated `verifyAdmin.js` to inspect and output both Custom Claims and Firestore `users/{uid}` document data.
+- **Files Changed:**
+  - `src/firebase-config.js`
+  - `src/auth.js`
+  - `src/main.js`
+  - `src/router.js`
+  - `src/pages/auth/login.js`
+  - `src/components/layout/navbar.js`
+  - `backend/src/firebaseAdmin.js`
+  - `backend/scripts/makeAdmin.js`
+  - `backend/scripts/verifyAdmin.js`
+  - `PROJECT_CHANGES.md`
+- **Testing Performed:**
+  - Automated integration test suite (`scratch/test_firestore_admin.mjs`):
+    - Test 1 (Verified Admin login): `shavni.390@gmail.com` logs in -> email verified -> Firestore role = "admin" -> Allowed Admin Dashboard & redirected to `/admin/index.html`.
+    - Test 2 (Normal user login): `role = "user"` -> Redirected to `/user/dashboard.html`.
+    - Test 3 (Normal user opens `/admin/`): Blocked with `"Access Denied. Administrator permissions are required."`.
+    - Test 4 (Logged out user opens `/admin/`): Blocked with login requirement.
+    - Test 5 (Unverified email opens `/admin/`): Blocked with `"Admin account email must be verified first."`.
+    - Test 6 (Firestore unavailable): Blocked with `"Unable to verify administrator permissions. Please try again."`.
+    - Test 6b (Firestore doc missing): Blocked with `"User profile not found."`.
+    - Test 7 (Logout): Clears session and returns user to public state.
+    - Test 8 (Preserved redirect): Explicit target URLs (e.g. `/notes/upload`) preserved during login.
+  - Linter check: `oxlint` reported 0 errors, 0 warnings across all 74 codebase files.
+  - Production build: `vite build` completed successfully with code 0 in 183ms.
+- **Current Status:** Fully operational, verified, and production ready.

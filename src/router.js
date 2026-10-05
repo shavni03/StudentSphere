@@ -35,6 +35,7 @@ class Router {
     // Alias /admin/index -> /admin
     if (path === '/admin/index') path = '/admin';
     if (path === '/index') path = '/';
+    if (path === '/user/dashboard') path = '/dashboard';
     // Alias common hyphenated pages to standard routes
     if (path === '/note-details') path = '/notes';
     if (path.startsWith('/note-details/')) path = path.replace('/note-details/', '/notes/');

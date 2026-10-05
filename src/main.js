@@ -4,7 +4,7 @@ import { appState } from './state.js';
 import { createIcon } from './icons.js';
 import { renderNavbar, bindNavbarEvents } from './components/layout/navbar.js';
 import { renderFooter } from './components/layout/footer.js';
-import { waitForAuthInit, isLoggedIn, isEmailVerified, isAdmin } from './auth.js';
+import { waitForAuthInit, isLoggedIn, isEmailVerified, verifyAdminStatus } from './auth.js';
 
 // Public Academic & Career Pages
 import { renderHomePage, bindHomePageEvents } from './pages/home.js';
@@ -167,29 +167,41 @@ async function renderProtectedPage(renderFn, bindFn, pageTitle, options = {}) {
     return;
   }
 
-  // 4. Admin Role Check via Custom Claims
+  // 4. Admin Role Check via Firestore users/{uid} document
   if (options.isAdmin) {
-    const hasAdminClaim = await isAdmin();
-    if (!hasAdminClaim) {
+    const adminCheck = await verifyAdminStatus();
+    if (!adminCheck.allowed) {
+      const heading = adminCheck.status === 'PROFILE_NOT_FOUND'
+        ? 'User Profile Not Found'
+        : adminCheck.status === 'FIRESTORE_ERROR'
+          ? 'Verification Error'
+          : 'Access Denied';
+
+      const badgeText = adminCheck.status === 'PROFILE_NOT_FOUND'
+        ? 'Profile Missing'
+        : adminCheck.status === 'FIRESTORE_ERROR'
+          ? 'Service Unavailable'
+          : 'Access Restricted (403)';
+
       renderAppShell(`
         <div class="container" style="padding: 5rem 1rem; max-width: 520px; margin: 0 auto; text-align: center;">
-          <div class="card" style="padding: 2.5rem 2rem; border: 1px solid rgba(239, 68, 68, 0.3);">
+          <div class="card" style="padding: 2.5rem 2rem; border: 1px solid rgba(239, 68, 68, 0.3); box-shadow: var(--shadow-lg);">
             <div style="width: 60px; height: 60px; border-radius: 16px; background: rgba(239, 68, 68, 0.12); color: #ef4444; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
               ${createIcon('shieldAlert', 28, '#ef4444')}
             </div>
-            <span class="badge badge-danger" style="margin-bottom: 0.85rem;">Access Denied (403)</span>
+            <span class="badge badge-danger" style="margin-bottom: 0.85rem;">${badgeText}</span>
             <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">
-              Admin Access Required
+              ${heading}
             </h1>
             <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.75rem;">
-              Your account does not have administrator authorization for the moderation portal.
+              ${adminCheck.message || 'Access Denied. Administrator permissions are required.'}
             </p>
             <a href="/dashboard" data-link class="btn btn-primary" style="text-decoration: none;">
               Return to Student Dashboard
             </a>
           </div>
         </div>
-      `, null, 'Access Denied', { isAdmin: true });
+      `, null, heading, { isAdmin: true });
       return;
     }
   }
@@ -406,6 +418,9 @@ router
   .addRoute('/dashboard', () => {
     renderProtectedPage(renderDashboardPage, bindDashboardEvents, 'Student Dashboard');
   })
+  .addRoute('/user/dashboard', () => {
+    renderProtectedPage(renderDashboardPage, bindDashboardEvents, 'Student Dashboard');
+  })
   .addRoute('/user/dashboard.html', () => {
     renderProtectedPage(renderDashboardPage, bindDashboardEvents, 'Student Dashboard');
   })
@@ -468,6 +483,12 @@ router
   // 5. ADMIN PORTAL (Login + Verified Email + Admin Authorization Required)
   // ----------------------------------------
   .addRoute('/admin', () => {
+    renderProtectedPage(renderAdminDashboardPage, bindAdminDashboardEvents, 'Admin Dashboard', { isAdmin: true });
+  })
+  .addRoute('/admin/index', () => {
+    renderProtectedPage(renderAdminDashboardPage, bindAdminDashboardEvents, 'Admin Dashboard', { isAdmin: true });
+  })
+  .addRoute('/admin/index.html', () => {
     renderProtectedPage(renderAdminDashboardPage, bindAdminDashboardEvents, 'Admin Dashboard', { isAdmin: true });
   })
   .addRoute('/admin/dashboard', () => {

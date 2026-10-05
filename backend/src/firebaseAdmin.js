@@ -90,5 +90,9 @@ module.exports = {
   getAuth: () => {
     initFirebaseAdmin();
     return admin.auth();
+  },
+  getFirestore: () => {
+    initFirebaseAdmin();
+    return admin.firestore();
   }
 };

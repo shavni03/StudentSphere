@@ -20,7 +20,8 @@ import {
   reload,
   deleteUser
 } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from './firebase-config.js';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db, isFirebaseConfigured } from './firebase-config.js';
 import { appState } from './state.js';
 import { router } from './router.js';
 
@@ -52,12 +53,37 @@ export function getCurrentUser() {
       email: u.email,
       photoURL: u.photoURL || appState.currentUser?.photoURL || null,
       isEmailVerified: Boolean(u.emailVerified || appState.currentUser?.isEmailVerified),
-      role: appState.currentUser?.role || 'student',
+      role: appState.currentUser?.role || 'user',
       university: appState.currentUser?.university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
       branch: appState.currentUser?.branch || 'CSE',
       semester: appState.currentUser?.semester || '5',
       credits: appState.currentUser?.credits ?? 100
     };
+  }
+
+  return appState.currentUser || null;
+}
+
+/**
+ * Retrieve user profile document from Firestore collection 'users'
+ * @param {string|null} uid - Target Firebase UID. Defaults to active user.
+ * @returns {Promise<object|null>}
+ */
+export async function getUserProfile(uid = null) {
+  const targetUid = uid || auth?.currentUser?.uid || appState.currentUser?.uid;
+  if (!targetUid) return null;
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', targetUid));
+      if (userDoc.exists()) {
+        return userDoc.data();
+      }
+      return null;
+    } catch (err) {
+      console.error('Failed to get user profile from Firestore:', err);
+      return null;
+    }
   }
 
   return appState.currentUser || null;
@@ -98,36 +124,145 @@ export async function getIdTokenResult(forceRefresh = false) {
 }
 
 /**
- * Verify whether the currently authenticated user possesses the 'admin: true' custom claim.
- * Frontend admin detection is strictly for UI routing/display; the backend enforces the true security boundary.
+ * Verifies whether the active user has administrator authorization in Firestore.
  * 
- * @param {boolean} forceRefresh - Force fresh token claim retrieval
- * @returns {Promise<boolean>}
+ * Strict Flow:
+ * 1. Checks Firebase Auth login.
+ * 2. Checks user.emailVerified.
+ * 3. Reads Firestore document: users/{currentUser.uid}.
+ * 4. Checks role === "admin".
+ * 
+ * Error Handling:
+ * - If user not logged in: { allowed: false, status: 'LOGIN_REQUIRED', message: 'Login required' }
+ * - If email unverified: { allowed: false, status: 'EMAIL_UNVERIFIED', message: 'Admin account email must be verified first.' }
+ * - If Firestore document does not exist: { allowed: false, status: 'PROFILE_NOT_FOUND', message: 'User profile not found.' }
+ * - If role !== 'admin': { allowed: false, status: 'NOT_ADMIN', message: 'Access Denied. Administrator permissions are required.' }
+ * - If Firestore request fails / db unavailable: { allowed: false, status: 'FIRESTORE_ERROR', message: 'Unable to verify administrator permissions. Please try again.' }
+ * 
+ * @returns {Promise<{ allowed: boolean, status: string, message?: string, data?: object }>}
  */
-export async function isAdmin(forceRefresh = false) {
-  if (!isFirebaseConfigured || !auth?.currentUser) {
-    return false;
+export async function verifyAdminStatus() {
+  await waitForAuthInit();
+
+  if (!isLoggedIn()) {
+    return {
+      allowed: false,
+      status: 'LOGIN_REQUIRED',
+      message: 'Login required'
+    };
+  }
+
+  const user = auth?.currentUser;
+  if (!user) {
+    return {
+      allowed: false,
+      status: 'LOGIN_REQUIRED',
+      message: 'Login required'
+    };
+  }
+
+  // Email verification check
+  if (!user.emailVerified) {
+    return {
+      allowed: false,
+      status: 'EMAIL_UNVERIFIED',
+      message: 'Admin account email must be verified first.'
+    };
+  }
+
+  if (!isFirebaseConfigured || !db) {
+    return {
+      allowed: false,
+      status: 'FIRESTORE_ERROR',
+      message: 'Unable to verify administrator permissions. Please try again.'
+    };
   }
 
   try {
-    const tokenResult = await auth.currentUser.getIdTokenResult(forceRefresh);
-    const hasAdminClaim = Boolean(tokenResult?.claims?.admin === true);
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
 
-    // Sync appState role for UI display
-    if (appState.currentUser) {
-      const prevRole = appState.currentUser.role;
-      appState.currentUser.role = hasAdminClaim ? 'admin' : 'student';
-      if (prevRole !== appState.currentUser.role) {
+    if (!userDoc.exists()) {
+      return {
+        allowed: false,
+        status: 'PROFILE_NOT_FOUND',
+        message: 'User profile not found.'
+      };
+    }
+
+    const userData = userDoc.data();
+    if (userData && userData.role === 'admin') {
+      // Sync appState for UI display
+      if (appState.currentUser) {
+        appState.currentUser.role = 'admin';
         localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(appState.currentUser));
         appState.notify();
       }
+      return {
+        allowed: true,
+        status: 'AUTHORIZED',
+        data: userData
+      };
+    } else {
+      if (appState.currentUser && appState.currentUser.role !== 'user') {
+        appState.currentUser.role = 'user';
+        localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(appState.currentUser));
+        appState.notify();
+      }
+      return {
+        allowed: false,
+        status: 'NOT_ADMIN',
+        message: 'Access Denied. Administrator permissions are required.'
+      };
     }
-
-    return hasAdminClaim;
   } catch (err) {
-    console.error('Failed to verify admin custom claim:', err);
+    console.error('Firestore admin verification error:', err);
+    return {
+      allowed: false,
+      status: 'FIRESTORE_ERROR',
+      message: 'Unable to verify administrator permissions. Please try again.'
+    };
+  }
+}
+
+/**
+ * Check if current user is an administrator via Firestore users/{uid} document.
+ * Returns true only when role === "admin" and email is verified.
+ * 
+ * @returns {Promise<boolean>}
+ */
+export async function isAdmin() {
+  const result = await verifyAdminStatus();
+  return result.allowed === true;
+}
+
+/**
+ * Guard requiring authenticated user session.
+ * Navigates to /auth/login.html if unauthenticated.
+ */
+export function requireAuth() {
+  const currentPathWithQuery = window.location.pathname + window.location.search;
+  if (!isLoggedIn()) {
+    const redirectUrl = `/auth/login.html?redirect=${encodeURIComponent(currentPathWithQuery)}`;
+    router.navigate(redirectUrl);
     return false;
   }
+  return true;
+}
+
+/**
+ * Guard requiring verified email address.
+ * Navigates to /auth/verify-email.html if unverified.
+ */
+export function requireVerifiedEmail() {
+  const currentPathWithQuery = window.location.pathname + window.location.search;
+  if (!requireAuth()) return false;
+  if (!isEmailVerified()) {
+    const verifyUrl = `/auth/verify-email.html?redirect=${encodeURIComponent(currentPathWithQuery)}`;
+    router.navigate(verifyUrl);
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -136,20 +271,20 @@ export async function isAdmin(forceRefresh = false) {
  */
 export async function requireAdmin() {
   await waitForAuthInit();
+  const currentPath = window.location.pathname + window.location.search;
 
   if (!isLoggedIn()) {
-    const currentPath = window.location.pathname + window.location.search;
     router.navigate(`/auth/login.html?redirect=${encodeURIComponent(currentPath)}`);
     return false;
   }
 
   if (!isEmailVerified()) {
-    const currentPath = window.location.pathname + window.location.search;
     router.navigate(`/auth/verify-email.html?redirect=${encodeURIComponent(currentPath)}`);
     return false;
   }
 
-  return await isAdmin();
+  const result = await verifyAdminStatus();
+  return result.allowed === true;
 }
 
 /**
@@ -228,6 +363,26 @@ export async function register({ name, email, password, confirmPassword, termsAc
     // 3. Dispatch official Firebase verification email
     await sendEmailVerification(user);
 
+    // 4. Initialize Firestore user record
+    if (db) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          email: user.email,
+          name,
+          role: 'user',
+          emailVerified: false,
+          university: university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
+          branch,
+          semester,
+          credits: 100,
+          createdAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (fsErr) {
+        console.warn('Could not write user to Firestore on register:', fsErr.message);
+      }
+    }
+
     const userProfile = {
       uid: user.uid,
       id: user.uid,
@@ -236,7 +391,7 @@ export async function register({ name, email, password, confirmPassword, termsAc
       branch,
       semester,
       university: university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
-      role: 'student',
+      role: 'user',
       isEmailVerified: false,
       credits: 100
     };
@@ -261,7 +416,7 @@ export async function register({ name, email, password, confirmPassword, termsAc
       branch,
       semester,
       university: university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
-      role: 'student',
+      role: 'user',
       isEmailVerified: false,
       credits: 100
     };
@@ -296,27 +451,37 @@ export async function login(email, password, options = {}) {
       const credential = await signInWithEmailAndPassword(auth, email, password);
       const user = credential.user;
 
-      // Cryptographically inspect custom claims from the ID token
-      let hasAdminClaim = false;
-      try {
-        const tokenResult = await user.getIdTokenResult();
-        hasAdminClaim = Boolean(tokenResult?.claims?.admin === true);
-      } catch (claimErr) {
-        console.warn('Could not read custom claims during login:', claimErr);
+      // 1. Get current Firebase user
+      // 2. Check user.emailVerified
+      // 3. Read Firestore document: users/{currentUser.uid}
+      // 4. Read the "role" field
+      let userRole = 'user';
+      let profileData = null;
+
+      if (db) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            profileData = userDoc.data();
+            userRole = (profileData.role === 'admin' && user.emailVerified) ? 'admin' : 'user';
+          }
+        } catch (fsErr) {
+          console.warn('Could not read user profile from Firestore during login:', fsErr);
+        }
       }
 
       const userProfile = {
         uid: user.uid,
         id: user.uid,
-        name: user.displayName || email.split('@')[0],
+        name: user.displayName || profileData?.name || email.split('@')[0],
         email: user.email,
-        photoURL: user.photoURL || appState.currentUser?.photoURL || null,
-        role: hasAdminClaim ? 'admin' : 'student',
+        photoURL: user.photoURL || profileData?.photoURL || appState.currentUser?.photoURL || null,
+        role: userRole,
         isEmailVerified: Boolean(user.emailVerified),
-        university: selectedCampus,
-        branch: selectedBranch,
-        semester: appState.currentUser?.semester || '5',
-        credits: appState.currentUser?.credits ?? 350
+        university: profileData?.university || selectedCampus,
+        branch: profileData?.branch || selectedBranch,
+        semester: profileData?.semester || appState.currentUser?.semester || '5',
+        credits: profileData?.credits ?? appState.currentUser?.credits ?? 350
       };
 
       localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(userProfile));
@@ -510,8 +675,6 @@ export function checkAuth(options = { requireVerified: true, requireAdmin: false
   return true;
 }
 
-export const requireAuth = checkAuth;
-
 // Subscribe to Firebase Auth state listener
 if (isFirebaseConfigured && auth) {
   onAuthStateChanged(auth, async (user) => {
@@ -524,26 +687,33 @@ if (isFirebaseConfigured && auth) {
         // ignore
       }
 
-      let hasAdminClaim = false;
-      try {
-        const tokenResult = await user.getIdTokenResult();
-        hasAdminClaim = Boolean(tokenResult?.claims?.admin === true);
-      } catch (claimErr) {
-        console.warn('Could not read custom claims during auth state init:', claimErr);
+      // Read Firestore document: users/{currentUser.uid}
+      let userRole = 'user';
+      let profileData = null;
+      if (db) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            profileData = userDoc.data();
+            userRole = (profileData.role === 'admin' && user.emailVerified) ? 'admin' : 'user';
+          }
+        } catch (fsErr) {
+          console.warn('Could not read user role from Firestore during auth state init:', fsErr);
+        }
       }
 
       const userProfile = {
         uid: user.uid,
         id: user.uid,
-        name: user.displayName || user.email?.split('@')[0] || 'Student',
+        name: user.displayName || profileData?.name || user.email?.split('@')[0] || 'Student',
         email: user.email,
-        photoURL: user.photoURL || existing?.photoURL || null,
+        photoURL: user.photoURL || profileData?.photoURL || existing?.photoURL || null,
         isEmailVerified: Boolean(user.emailVerified),
-        role: hasAdminClaim ? 'admin' : 'student',
-        university: existing?.university || appState.currentUser?.university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
-        branch: existing?.branch || appState.currentUser?.branch || 'CSE',
-        semester: existing?.semester || appState.currentUser?.semester || '5',
-        credits: existing?.credits ?? appState.currentUser?.credits ?? 350
+        role: userRole,
+        university: profileData?.university || existing?.university || appState.currentUser?.university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
+        branch: profileData?.branch || existing?.branch || appState.currentUser?.branch || 'CSE',
+        semester: profileData?.semester || existing?.semester || appState.currentUser?.semester || '5',
+        credits: profileData?.credits ?? existing?.credits ?? appState.currentUser?.credits ?? 350
       };
       localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(userProfile));
       appState.currentUser = userProfile;
