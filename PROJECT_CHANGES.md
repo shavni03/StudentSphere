@@ -460,3 +460,60 @@ studentSphere/
   - Preview server verified active and responding on `http://localhost:4173/`.
 - **Current Status:** Fully operational, customized for Graphic Era (Deemed & Hill), and verified in both Light and Dark modes.
 
+### Change Record #14: Secure Firebase Admin Role System & Custom Claims Implementation
+- **Date:** 2026-10-06
+- **Architecture & Security Rules Enforced:**
+  - 100% Vanilla JavaScript, HTML5, and CSS3. Zero React/Vue/Angular frontend frameworks.
+  - No fake admin systems via `localStorage`, `sessionStorage`, URL queries, or HTML attributes.
+  - Zero hardcoding of `admin=true` in frontend; client users cannot self-promote.
+  - Zero private service account credentials committed to Git or exposed in client bundles (`.gitignore` updated to block credentials and backend `.env`).
+  - Strict security boundary: Role authorization is verified cryptographically via Firebase Custom Claims `{ "admin": true }` on the backend and validated on ID token results.
+- **Changes Made:**
+  1. **Backend Architecture & Express Server (`backend/`):**
+     - Initialized Node.js + Express backend prepared with `firebase-admin`, `cors`, and `dotenv`.
+     - Created `backend/src/firebaseAdmin.js` implementing secure SDK initialization via server environment variables (`FIREBASE_SERVICE_ACCOUNT_KEY`, `FIREBASE_CLIENT_EMAIL`/`FIREBASE_PRIVATE_KEY`) or local file paths.
+     - Implemented `verifyFirebaseToken` and `requireAdminRole` middlewares in `backend/src/middleware/authMiddleware.js` ensuring token freshness (`checkRevoked = true`), email verification (`email_verified === true`), and admin custom claim (`admin === true`).
+     - Added protected admin endpoints in `backend/src/routes/adminRoutes.js` (`/api/admin/verify-status` and `/api/admin/users`).
+  2. **Idempotent Administrator Provisioning Script (`backend/scripts/makeAdmin.js`):**
+     - Reads `ADMIN_FIREBASE_UID` from environment variable or command-line arguments, with email lookup fallback for `shavni.390@gmail.com`.
+     - Validates account exists in Firebase Authentication.
+     - Enforces Safety Check: Account email must strictly match `shavni.390@gmail.com`.
+     - Enforces Safety Check: Account email must be verified (`emailVerified === true`). If unverified, cleanly aborts with: `"Admin account email must be verified first."`.
+     - Enforces Idempotence: If user already has `admin: true`, safely preserves claims and outputs `"User is already an administrator."`.
+     - Safely merges custom claims without deleting unrelated claims (e.g. `{ ...currentClaims, admin: true }`).
+     - Outputs exact structured audit confirmation without exposing sensitive tokens or credentials.
+  3. **Verification Utility (`backend/scripts/verifyAdmin.js`):**
+     - Read-only diagnostic tool to inspect Firebase Auth profile, verification status, and custom claims for any UID or email.
+  4. **Frontend Centralized Auth Layer (`src/auth.js` & `js/auth.js`):**
+     - Added `getIdToken(forceRefresh = false)` to obtain raw JWT ID tokens.
+     - Added `getIdTokenResult(forceRefresh = false)` to inspect `tokenResult.claims`.
+     - Added `isAdmin(forceRefresh = false)` to verify `{ admin: true }` claim cryptographically.
+     - Added `requireAdmin()` checking auth initialization, active session, email verification, and `isAdmin()`.
+     - Updated `login()` and `onAuthStateChanged` to resolve claims via `user.getIdTokenResult()` and synchronize UI role dynamically.
+     - Re-exported all authentication helpers from `js/auth.js`.
+  5. **Admin Route Protection Guard (`src/main.js`):**
+     - Enhanced `renderProtectedPage` to execute the exact 4-step security flow:
+       1. Auth initialization spinner (`waitForAuthInit`)
+       2. Login check (renders Login Required card if unauthenticated, preserving target redirect)
+       3. Email verification check (redirects to `/auth/verify-email.html` if unverified)
+       4. Custom claims check for all `/admin/*` routes (renders 403 Access Denied card if `admin !== true`)
+- **Files Changed / Created:**
+  - `backend/package.json`
+  - `backend/.env.example`
+  - `backend/README.md`
+  - `backend/src/firebaseAdmin.js`
+  - `backend/src/middleware/authMiddleware.js`
+  - `backend/src/routes/adminRoutes.js`
+  - `backend/src/server.js`
+  - `backend/scripts/makeAdmin.js`
+  - `backend/scripts/verifyAdmin.js`
+  - `src/auth.js`
+  - `src/main.js`
+  - `package.json`
+  - `.gitignore`
+  - `PROJECT_CHANGES.md`
+- **Testing Performed:**
+  - `oxlint`: 0 errors, 0 warnings across all 74 files.
+  - Production build: `vite build` completed cleanly with code 0 (129ms).
+  - Test suites: 6/6 admin custom claims tests passed; 35/35 auth guard and registration/login tests passed.
+- **Current Status:** Fully operational, secure, and production ready.

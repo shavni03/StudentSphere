@@ -52,7 +52,8 @@ export function getCurrentUser() {
       email: u.email,
       photoURL: u.photoURL || appState.currentUser?.photoURL || null,
       isEmailVerified: Boolean(u.emailVerified || appState.currentUser?.isEmailVerified),
-      role: u.email?.includes('admin') ? 'admin' : (appState.currentUser?.role || 'student'),
+      role: appState.currentUser?.role || 'student',
+      university: appState.currentUser?.university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
       branch: appState.currentUser?.branch || 'CSE',
       semester: appState.currentUser?.semester || '5',
       credits: appState.currentUser?.credits ?? 100
@@ -60,6 +61,95 @@ export function getCurrentUser() {
   }
 
   return appState.currentUser || null;
+}
+
+/**
+ * Retrieve raw JWT ID Token for authenticating backend API requests
+ * @param {boolean} forceRefresh - Force token refresh from Firebase servers
+ * @returns {Promise<string|null>}
+ */
+export async function getIdToken(forceRefresh = false) {
+  if (isFirebaseConfigured && auth?.currentUser) {
+    try {
+      return await auth.currentUser.getIdToken(forceRefresh);
+    } catch (err) {
+      console.error('Failed to get Firebase ID token:', err);
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Retrieve IdTokenResult containing Custom Claims from Firebase
+ * @param {boolean} forceRefresh - Force token refresh to fetch newly assigned claims
+ * @returns {Promise<import('firebase/auth').IdTokenResult|null>}
+ */
+export async function getIdTokenResult(forceRefresh = false) {
+  if (isFirebaseConfigured && auth?.currentUser) {
+    try {
+      return await auth.currentUser.getIdTokenResult(forceRefresh);
+    } catch (err) {
+      console.error('Failed to get Firebase ID token result:', err);
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Verify whether the currently authenticated user possesses the 'admin: true' custom claim.
+ * Frontend admin detection is strictly for UI routing/display; the backend enforces the true security boundary.
+ * 
+ * @param {boolean} forceRefresh - Force fresh token claim retrieval
+ * @returns {Promise<boolean>}
+ */
+export async function isAdmin(forceRefresh = false) {
+  if (!isFirebaseConfigured || !auth?.currentUser) {
+    return false;
+  }
+
+  try {
+    const tokenResult = await auth.currentUser.getIdTokenResult(forceRefresh);
+    const hasAdminClaim = Boolean(tokenResult?.claims?.admin === true);
+
+    // Sync appState role for UI display
+    if (appState.currentUser) {
+      const prevRole = appState.currentUser.role;
+      appState.currentUser.role = hasAdminClaim ? 'admin' : 'student';
+      if (prevRole !== appState.currentUser.role) {
+        localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(appState.currentUser));
+        appState.notify();
+      }
+    }
+
+    return hasAdminClaim;
+  } catch (err) {
+    console.error('Failed to verify admin custom claim:', err);
+    return false;
+  }
+}
+
+/**
+ * Guard function for admin routes
+ * @returns {Promise<boolean>}
+ */
+export async function requireAdmin() {
+  await waitForAuthInit();
+
+  if (!isLoggedIn()) {
+    const currentPath = window.location.pathname + window.location.search;
+    router.navigate(`/auth/login.html?redirect=${encodeURIComponent(currentPath)}`);
+    return false;
+  }
+
+  if (!isEmailVerified()) {
+    const currentPath = window.location.pathname + window.location.search;
+    router.navigate(`/auth/verify-email.html?redirect=${encodeURIComponent(currentPath)}`);
+    return false;
+  }
+
+  return await isAdmin();
 }
 
 /**
@@ -206,13 +296,22 @@ export async function login(email, password, options = {}) {
       const credential = await signInWithEmailAndPassword(auth, email, password);
       const user = credential.user;
 
+      // Cryptographically inspect custom claims from the ID token
+      let hasAdminClaim = false;
+      try {
+        const tokenResult = await user.getIdTokenResult();
+        hasAdminClaim = Boolean(tokenResult?.claims?.admin === true);
+      } catch (claimErr) {
+        console.warn('Could not read custom claims during login:', claimErr);
+      }
+
       const userProfile = {
         uid: user.uid,
         id: user.uid,
         name: user.displayName || email.split('@')[0],
         email: user.email,
         photoURL: user.photoURL || appState.currentUser?.photoURL || null,
-        role: user.email?.includes('admin') ? 'admin' : (appState.currentUser?.role || 'student'),
+        role: hasAdminClaim ? 'admin' : 'student',
         isEmailVerified: Boolean(user.emailVerified),
         university: selectedCampus,
         branch: selectedBranch,
@@ -237,7 +336,7 @@ export async function login(email, password, options = {}) {
       throw new Error(friendlyMsg);
     }
   } else {
-    // Developer Fallback Mode
+    // Developer Fallback Mode (Strictly defaults to student; admin must be granted via backend)
     const stored = localStorage.getItem(STORAGE_KEY_AUTH_USER);
     let userProfile = stored ? JSON.parse(stored) : null;
 
@@ -247,7 +346,7 @@ export async function login(email, password, options = {}) {
         id: 'usr-001',
         name: email.split('@')[0],
         email,
-        role: email.includes('admin') ? 'admin' : 'student',
+        role: 'student',
         isEmailVerified: false,
         university: selectedCampus,
         branch: selectedBranch,
@@ -257,10 +356,9 @@ export async function login(email, password, options = {}) {
     } else {
       userProfile.university = selectedCampus;
       userProfile.branch = selectedBranch;
+      userProfile.email = email;
+      userProfile.role = 'student';
     }
-
-    userProfile.email = email;
-    if (email.includes('admin')) userProfile.role = 'admin';
 
     localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(userProfile));
     appState.currentUser = userProfile;
@@ -416,7 +514,7 @@ export const requireAuth = checkAuth;
 
 // Subscribe to Firebase Auth state listener
 if (isFirebaseConfigured && auth) {
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     if (user) {
       let existing = null;
       try {
@@ -426,6 +524,14 @@ if (isFirebaseConfigured && auth) {
         // ignore
       }
 
+      let hasAdminClaim = false;
+      try {
+        const tokenResult = await user.getIdTokenResult();
+        hasAdminClaim = Boolean(tokenResult?.claims?.admin === true);
+      } catch (claimErr) {
+        console.warn('Could not read custom claims during auth state init:', claimErr);
+      }
+
       const userProfile = {
         uid: user.uid,
         id: user.uid,
@@ -433,7 +539,7 @@ if (isFirebaseConfigured && auth) {
         email: user.email,
         photoURL: user.photoURL || existing?.photoURL || null,
         isEmailVerified: Boolean(user.emailVerified),
-        role: user.email?.includes('admin') ? 'admin' : (existing?.role || appState.currentUser?.role || 'student'),
+        role: hasAdminClaim ? 'admin' : 'student',
         university: existing?.university || appState.currentUser?.university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
         branch: existing?.branch || appState.currentUser?.branch || 'CSE',
         semester: existing?.semester || appState.currentUser?.semester || '5',

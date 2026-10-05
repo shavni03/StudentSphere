@@ -13,12 +13,21 @@ lerna-debug.log*
 .env.development
 .env.test
 .env.production
+backend/.env
+backend/.env.*
+!backend/.env.example
+*serviceAccountKey*.json
+*service-account*.json
+firebase-admin-key*.json
+*.pem
 
 # Dependencies and build
 node_modules
+backend/node_modules
 dist
 dist-ssr
 *.local
+scratch/
 
 # Editor directories and files
 .vscode/*

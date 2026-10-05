@@ -4,7 +4,7 @@ import { appState } from './state.js';
 import { createIcon } from './icons.js';
 import { renderNavbar, bindNavbarEvents } from './components/layout/navbar.js';
 import { renderFooter } from './components/layout/footer.js';
-import { waitForAuthInit, isLoggedIn, isEmailVerified } from './auth.js';
+import { waitForAuthInit, isLoggedIn, isEmailVerified, isAdmin } from './auth.js';
 
 // Public Academic & Career Pages
 import { renderHomePage, bindHomePageEvents } from './pages/home.js';
@@ -106,7 +106,7 @@ export function renderAppShell(contentHtml, bindContentFn, pageTitle = 'StudentS
  * 3. Mandatory email verification check (redirects to /auth/verify-email.html)
  * 4. Administrator role check for /admin/*
  */
-function renderProtectedPage(renderFn, bindFn, pageTitle, options = {}) {
+async function renderProtectedPage(renderFn, bindFn, pageTitle, options = {}) {
   const currentPathWithQuery = window.location.pathname + window.location.search;
 
   // 1. Auth Loading State (Do not expose protected content before auth completes)
@@ -119,10 +119,8 @@ function renderProtectedPage(renderFn, bindFn, pageTitle, options = {}) {
       </div>
     `, null, 'Checking Authorization...', { isProtected: true });
 
-    waitForAuthInit().then(() => {
-      renderProtectedPage(renderFn, bindFn, pageTitle, options);
-    });
-    return;
+    await waitForAuthInit();
+    return renderProtectedPage(renderFn, bindFn, pageTitle, options);
   }
 
   // 2. Unauthenticated User Check (Show Login Required card, no blank page)
@@ -169,28 +167,31 @@ function renderProtectedPage(renderFn, bindFn, pageTitle, options = {}) {
     return;
   }
 
-  // 4. Admin Role Check
-  if (options.isAdmin && !appState.isAdmin) {
-    renderAppShell(`
-      <div class="container" style="padding: 5rem 1rem; max-width: 520px; margin: 0 auto; text-align: center;">
-        <div class="card" style="padding: 2.5rem 2rem; border: 1px solid rgba(239, 68, 68, 0.3);">
-          <div style="width: 60px; height: 60px; border-radius: 16px; background: rgba(239, 68, 68, 0.12); color: #ef4444; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
-            ${createIcon('shieldAlert', 28, '#ef4444')}
+  // 4. Admin Role Check via Custom Claims
+  if (options.isAdmin) {
+    const hasAdminClaim = await isAdmin();
+    if (!hasAdminClaim) {
+      renderAppShell(`
+        <div class="container" style="padding: 5rem 1rem; max-width: 520px; margin: 0 auto; text-align: center;">
+          <div class="card" style="padding: 2.5rem 2rem; border: 1px solid rgba(239, 68, 68, 0.3);">
+            <div style="width: 60px; height: 60px; border-radius: 16px; background: rgba(239, 68, 68, 0.12); color: #ef4444; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
+              ${createIcon('shieldAlert', 28, '#ef4444')}
+            </div>
+            <span class="badge badge-danger" style="margin-bottom: 0.85rem;">Access Denied (403)</span>
+            <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">
+              Admin Access Required
+            </h1>
+            <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.75rem;">
+              Your account does not have administrator authorization for the moderation portal.
+            </p>
+            <a href="/dashboard" data-link class="btn btn-primary" style="text-decoration: none;">
+              Return to Student Dashboard
+            </a>
           </div>
-          <span class="badge badge-danger" style="margin-bottom: 0.85rem;">Access Denied (403)</span>
-          <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">
-            Admin Access Required
-          </h1>
-          <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.75rem;">
-            Your account does not have administrator authorization for the moderation portal.
-          </p>
-          <a href="/dashboard" data-link class="btn btn-primary" style="text-decoration: none;">
-            Return to Student Dashboard
-          </a>
         </div>
-      </div>
-    `, null, 'Access Denied', { isAdmin: true });
-    return;
+      `, null, 'Access Denied', { isAdmin: true });
+      return;
+    }
   }
 
   // Authorized -> Render requested content

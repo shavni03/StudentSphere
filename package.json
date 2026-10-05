@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "backend:start": "npm --prefix backend start",
+    "backend:dev": "npm --prefix backend run dev",
+    "admin:setup": "node backend/scripts/makeAdmin.js",
+    "admin:verify": "node backend/scripts/verifyAdmin.js"
   },
   "devDependencies": {
     "oxlint": "^1.81.0",
