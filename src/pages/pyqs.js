@@ -1,6 +1,7 @@
 import { mockPYQs } from '../data/mockData.js';
 import { createIcon } from '../icons.js';
 import { router } from '../router.js';
+import { appState } from '../state.js';
 import { renderSearchBar, bindSearchBarEvents } from '../components/common/searchBar.js';
 import { renderFilterChips, renderFilterDrawer } from '../components/common/filters.js';
 import { renderAdSlot } from '../components/ads/adSlot.js';
@@ -17,8 +18,16 @@ export function renderPYQsPage() {
   const year = query.get('year') || '';
   const examType = query.get('examType') || '';
 
+  const universities = appState.universities || [
+    'Graphic Era (Deemed to be University) - GEU Dehradun',
+    'Graphic Era Hill University (GEHU Dehradun)',
+    'Graphic Era Hill University (GEHU Bhimtal)',
+    'Graphic Era Hill University (GEHU Haldwani)'
+  ];
+  const branches = appState.branches || ['CSE', 'IT', 'AIDS', 'ECE', 'EE', 'ME', 'Civil', 'Biotechnology', 'MCA', 'BCA', 'MBA'];
+
   const activeChips = [];
-  if (university) activeChips.push({ key: 'university', label: `Univ: ${university}` });
+  if (university) activeChips.push({ key: 'university', label: `Campus: ${university.includes('Deemed') ? 'GEU Deemed' : university.includes('Hill') ? 'GEHU Hill' : university}` });
   if (branch) activeChips.push({ key: 'branch', label: `Branch: ${branch}` });
   if (semester) activeChips.push({ key: 'semester', label: `Sem ${semester}` });
   if (subject) activeChips.push({ key: 'subject', label: `Subject: ${subject}` });
@@ -28,10 +37,10 @@ export function renderPYQsPage() {
   let list = mockPYQs.filter(item => item.status === 'Approved');
   if (q.trim()) {
     const term = q.toLowerCase();
-    list = list.filter(p => p.subject.toLowerCase().includes(term) || p.university.toLowerCase().includes(term));
+    list = list.filter(p => p.subject.toLowerCase().includes(term) || (p.university || '').toLowerCase().includes(term));
   }
-  if (university) list = list.filter(p => p.university.toLowerCase().includes(university.toLowerCase()));
-  if (branch) list = list.filter(p => p.branch.toLowerCase() === branch.toLowerCase());
+  if (university) list = list.filter(p => (p.university || '').toLowerCase().includes(university.toLowerCase()) || (p.university || '').toLowerCase().includes('graphic era'));
+  if (branch) list = list.filter(p => p.branch.toLowerCase() === branch.toLowerCase() || p.branch.toLowerCase().includes(branch.toLowerCase()));
   if (semester) list = list.filter(p => p.semester === semester);
   if (subject) list = list.filter(p => p.subject.toLowerCase().includes(subject.toLowerCase()));
   if (year) list = list.filter(p => p.year === year);
@@ -39,12 +48,12 @@ export function renderPYQsPage() {
 
   const filterFormHtml = `
     <div class="form-group">
-      <label class="form-label">University</label>
+      <label class="form-label">Graphic Era Campus</label>
       <select class="form-select pyqs-filter-input" data-key="university">
-        <option value="">All Universities</option>
-        <option value="Delhi Technological University" ${university.includes('Delhi') ? 'selected' : ''}>Delhi Technological Univ (DTU)</option>
-        <option value="Anna University" ${university.includes('Anna') ? 'selected' : ''}>Anna University</option>
-        <option value="Mumbai University" ${university.includes('Mumbai') ? 'selected' : ''}>Mumbai University</option>
+        <option value="">All Graphic Era Campuses</option>
+        ${universities.map(u => `
+          <option value="${u}" ${university === u ? 'selected' : ''}>${u.includes('Deemed') ? 'Graphic Era Deemed (GEU)' : u.includes('Bhimtal') ? 'GEHU Bhimtal' : u.includes('Haldwani') ? 'GEHU Haldwani' : 'Graphic Era Hill (GEHU)'}</option>
+        `).join('')}
       </select>
     </div>
 
@@ -52,10 +61,9 @@ export function renderPYQsPage() {
       <label class="form-label">Branch</label>
       <select class="form-select pyqs-filter-input" data-key="branch">
         <option value="">All Branches</option>
-        <option value="CSE" ${branch === 'CSE' ? 'selected' : ''}>Computer Science (CSE)</option>
-        <option value="IT" ${branch === 'IT' ? 'selected' : ''}>Information Technology (IT)</option>
-        <option value="ECE" ${branch === 'ECE' ? 'selected' : ''}>Electronics (ECE)</option>
-        <option value="ME" ${branch === 'ME' ? 'selected' : ''}>Mechanical (ME)</option>
+        ${branches.map(b => `
+          <option value="${b}" ${branch.toLowerCase() === b.toLowerCase() ? 'selected' : ''}>${b}</option>
+        `).join('')}
       </select>
     </div>
 
@@ -96,8 +104,8 @@ export function renderPYQsPage() {
     <div class="container" style="padding: 2rem 1.25rem 4rem 1.25rem;">
       <div style="padding: 0.85rem 1.25rem; border-radius: var(--radius-lg); background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%); border: 1px solid rgba(99, 102, 241, 0.3); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1.75rem;">
         <div style="display: flex; align-items: center; gap: 0.65rem;">
-          ${createIcon('layers', 20, '#818cf8')}
-          <span style="font-size: 0.875rem; font-weight: 600; color: #f8fafc;">
+          ${createIcon('layers', 20, '#6366f1')}
+          <span style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary);">
             Free Past Question Papers (PYQs): Official end-term & mid-term question sets with answer keys. 0 Credits cost.
           </span>
         </div>
@@ -108,7 +116,7 @@ export function renderPYQsPage() {
         <div>
           <h1 style="font-size: 1.85rem; font-weight: 800;">Previous Year Question Papers (PYQs)</h1>
           <p style="font-size: 0.875rem; color: var(--text-secondary);">
-            Search question sets across semester exams, branches, and universities.
+            Search question sets across Graphic Era campuses, semester exams, and branches.
           </p>
         </div>
 
@@ -127,7 +135,7 @@ export function renderPYQsPage() {
 
         <div>
           ${downloadNoticeItem ? `
-            <div style="padding: 0.75rem 1rem; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #6ee7b7; font-size: 0.85rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+            <div style="padding: 0.75rem 1rem; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #047857; font-size: 0.85rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
               ${createIcon('check', 18, '#10b981')}
               <span>Free download started for <strong>${downloadNoticeItem.subject} (${downloadNoticeItem.examType})</strong>!</span>
             </div>
@@ -136,7 +144,7 @@ export function renderPYQsPage() {
           ${list.length === 0 ? `
             <div class="card" style="text-align: center; padding: 3.5rem 1rem;">
               <div style="opacity: 0.4; margin-bottom: 1rem;">${createIcon('layers', 44, 'var(--text-muted)')}</div>
-              <h3 style="font-size: 1.15rem; color: #fff;">No question papers found</h3>
+              <h3 style="font-size: 1.15rem; color: var(--text-primary);">No question papers found</h3>
               <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem;">
                 Try adjusting the university, branch, or exam type filters.
               </p>
@@ -156,7 +164,7 @@ export function renderPYQsPage() {
                     </div>
 
                     <a href="/pyqs/${item.id}" data-link>
-                      <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
+                      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem;">
                         ${item.subject}
                       </h3>
                     </a>

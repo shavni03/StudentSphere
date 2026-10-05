@@ -10,7 +10,7 @@ export function renderSavedJobsPage() {
     <div class="container" style="padding: 2rem 1rem 4rem;">
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
         <div>
-          <h1 style="font-size: 2rem; font-weight: 800; color: #fff; letter-spacing: -0.02em;">
+          <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em;">
             Saved Job Opportunities
           </h1>
           <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.4rem;">
@@ -27,7 +27,7 @@ export function renderSavedJobsPage() {
           <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(99, 102, 241, 0.1); margin: 0 auto 1.25rem; display: flex; align-items: center; justify-content: center;">
             ${createIcon('bookmark', 28, '#818cf8')}
           </div>
-          <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff;">No bookmarked jobs yet</h3>
+          <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">No bookmarked jobs yet</h3>
           <p style="font-size: 0.875rem; color: var(--text-muted); max-width: 440px; margin: 0.5rem auto 1.5rem;">
             When you find a campus recruitment or off-campus opening you are interested in, click the bookmark icon to save it here.
           </p>
@@ -41,12 +41,12 @@ export function renderSavedJobsPage() {
             <div class="card" style="padding: 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1.25rem;">
               <div style="flex: 1; min-width: 280px;">
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
-                  <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">${job.title}</h3>
+                  <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">${job.title}</h3>
                   <span class="badge badge-primary">${job.type}</span>
                   <span class="badge ${job.mode === 'Remote' ? 'badge-success' : 'badge-warning'}">${job.mode}</span>
                 </div>
                 <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.3rem;">
-                  <strong style="color: #fff;">${job.company}</strong> • ${job.location} • CTC: <span style="color: #10b981; font-weight: 700;">${job.package}</span>
+                  <strong style="color: var(--text-primary);">${job.company}</strong> • ${job.location} • CTC: <span style="color: #10b981; font-weight: 700;">${job.package}</span>
                 </p>
                 <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-muted);">
                   <span>Deadline: <strong style="color: #fca5a5;">${job.deadline}</strong></span>

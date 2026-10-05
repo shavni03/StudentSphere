@@ -1,6 +1,7 @@
 import { mockNotes } from '../data/mockData.js';
 import { createIcon } from '../icons.js';
 import { router } from '../router.js';
+import { appState } from '../state.js';
 import { renderSearchBar, bindSearchBarEvents } from '../components/common/searchBar.js';
 import { renderFilterChips, renderFilterDrawer } from '../components/common/filters.js';
 import { renderAdSlot } from '../components/ads/adSlot.js';
@@ -10,6 +11,7 @@ let downloadNoticeNote = null;
 export function renderNotesPage() {
   const query = router.getQueryParams();
   const q = query.get('q') || '';
+  const campus = query.get('campus') || '';
   const branch = query.get('branch') || '';
   const semester = query.get('semester') || '';
   const subject = query.get('subject') || '';
@@ -20,8 +22,11 @@ export function renderNotesPage() {
   const uploader = query.get('uploader') || '';
   const sortBy = query.get('sort') || 'popular';
 
+  const branches = appState.branches || ['CSE', 'IT', 'AIDS', 'ECE', 'EE', 'ME', 'Civil', 'Biotechnology', 'MCA', 'BCA', 'MBA'];
+
   // Build active chips
   const activeChips = [];
+  if (campus) activeChips.push({ key: 'campus', label: `Campus: ${campus}` });
   if (branch) activeChips.push({ key: 'branch', label: `Branch: ${branch}` });
   if (semester) activeChips.push({ key: 'semester', label: `Sem ${semester}` });
   if (subject) activeChips.push({ key: 'subject', label: `Subject: ${subject}` });
@@ -43,7 +48,8 @@ export function renderNotesPage() {
       n.description.toLowerCase().includes(term)
     );
   }
-  if (branch) list = list.filter(n => n.branch.toLowerCase() === branch.toLowerCase());
+  if (campus) list = list.filter(n => (n.university || '').toLowerCase().includes(campus.toLowerCase()));
+  if (branch) list = list.filter(n => n.branch.toLowerCase() === branch.toLowerCase() || n.branch.toLowerCase().includes(branch.toLowerCase()));
   if (semester) list = list.filter(n => n.semester === semester);
   if (subject) list = list.filter(n => n.subject.toLowerCase().includes(subject.toLowerCase()));
   if (subjectCode) list = list.filter(n => n.subjectCode.toLowerCase() === subjectCode.toLowerCase());
@@ -61,14 +67,19 @@ export function renderNotesPage() {
 
   const filterFormHtml = `
     <div class="form-group">
+      <label class="form-label">Graphic Era Campus</label>
+      <select class="form-select notes-filter-input" data-key="campus">
+        <option value="">All Campuses</option>
+        <option value="GEU" ${campus === 'GEU' ? 'selected' : ''}>Graphic Era Deemed (GEU)</option>
+        <option value="GEHU" ${campus === 'GEHU' ? 'selected' : ''}>Graphic Era Hill (GEHU)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
       <label class="form-label">Branch</label>
       <select class="form-select notes-filter-input" data-key="branch">
         <option value="">All Branches</option>
-        <option value="CSE" ${branch === 'CSE' ? 'selected' : ''}>Computer Science (CSE)</option>
-        <option value="IT" ${branch === 'IT' ? 'selected' : ''}>Information Technology (IT)</option>
-        <option value="ECE" ${branch === 'ECE' ? 'selected' : ''}>Electronics (ECE)</option>
-        <option value="AIDS" ${branch === 'AIDS' ? 'selected' : ''}>AI & Data Science (AIDS)</option>
-        <option value="ME" ${branch === 'ME' ? 'selected' : ''}>Mechanical (ME)</option>
+        ${branches.map(b => `<option value="${b}" ${branch.toLowerCase() === b.toLowerCase() ? 'selected' : ''}>${b}</option>`).join('')}
       </select>
     </div>
 

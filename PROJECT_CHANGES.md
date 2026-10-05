@@ -410,3 +410,53 @@ studentSphere/
   - Oxlint: 0 errors, 0 warnings across all codebase files.
   - Production build: `vite build` completed with code 0.
 - **Current Status:** Fully operational and production ready.
+
+### Change Record #13: Graphic Era (Deemed & Hill) Campus Customization, Login Campus/Branch Selector, and Comprehensive Light Mode Visibility Overhaul
+- **Date:** 2026-10-06
+- **Changes Made:**
+  1. **Graphic Era University & Campus State Alignment:**
+     - Tailored the platform specifically for **Graphic Era (Deemed to be University) [GEU]** and **Graphic Era Hill University [GEHU]** (Dehradun, Bhimtal, Haldwani campuses).
+     - Configured `DEFAULT_UNIVERSITIES` in `src/state.js` featuring Graphic Era Deemed (GEU Dehradun) and Graphic Era Hill University (GEHU Dehradun, GEHU Bhimtal, GEHU Haldwani).
+     - Enhanced `DEFAULT_BRANCHES` with Graphic Era engineering, computing, and management offerings: `CSE`, `CSE (AI & ML)`, `CSE (Data Science)`, `CSE (Cyber Security)`, `IT`, `AIDS`, `ECE`, `EE`, `ME`, `Civil`, `Biotechnology`, `MCA`, `BCA`, `MBA`, `BBA`.
+     - Added admin capability to dynamically add/remove university campuses with persistence in `src/state.js` and `/admin/settings`.
+  2. **Login Screen Campus & Branch Selector:**
+     - As explicitly requested, added University / Campus (GEU Deemed vs GEHU Hill) and Branch selection controls directly on the Sign-In card (`/login`).
+     - Allowed students to confirm or switch their campus and branch context at login time, passing `{ university, branch }` options to `login()` in `src/auth.js`.
+  3. **Registration & Profile Screen Campus Support:**
+     - Added mandatory University / Campus selection dropdown to Registration (`/register`) with non-destructive validation.
+     - Added University / Campus dropdown to Student Profile (`/profile`) allowing students to update their affiliation anytime.
+  4. **Notes & PYQs University Filtering:**
+     - Updated `/notes` and `/pyqs` filter drawers to support Graphic Era campus selection (`Graphic Era (Deemed to be University) - GEU` and `Graphic Era Hill University - GEHU`).
+     - Synchronized mock datasets (`mockPYQs` and `mockUsers`) with Graphic Era campuses and academic emails (`@geu.ac.in`, `@gehu.ac.in`).
+  5. **Comprehensive Light Mode Visibility & Contrast Overhaul:**
+     - Overhauled `[data-theme="light"]` styles in `src/index.css` to eliminate unreadable/invisible white and pastel text on light backgrounds.
+     - Implemented targeted attribute selector overrides switching inline `#fff` / `#f8fafc` text to `var(--text-primary)` while safeguarding buttons (`.btn-primary`, `.btn-danger`) and gradient avatar badges.
+     - Enhanced light mode contrast for pastel indicators: green (`#047857`), amber (`#b45309`), red (`#dc2626`), sky blue (`#0284c7`), indigo (`#4338ca`).
+     - Replaced hardcoded `#fff` across `dashboard.js`, `credits.js`, `savedJobs.js`, `jobs.js`, `noteDetail.js`, `pyqDetail.js`, and `notifications.js` with semantic CSS variables (`var(--text-primary)`).
+- **Files Changed:**
+  - `src/state.js`
+  - `src/index.css`
+  - `src/auth.js`
+  - `src/pages/auth/login.js`
+  - `src/pages/auth/register.js`
+  - `src/pages/profile.js`
+  - `src/pages/admin/adminSettings.js`
+  - `src/pages/notes.js`
+  - `src/pages/pyqs.js`
+  - `src/pages/dashboard.js`
+  - `src/pages/credits.js`
+  - `src/pages/savedJobs.js`
+  - `src/pages/jobs.js`
+  - `src/pages/noteDetail.js`
+  - `src/pages/pyqDetail.js`
+  - `src/pages/notifications.js`
+  - `src/pages/home.js`
+  - `src/data/mockData.js`
+  - `src/components/layout/navbar.js`
+  - `PROJECT_CHANGES.md`
+- **Testing Performed:**
+  - Oxlint: 0 errors, 0 warnings across all 68 codebase files.
+  - Production build: `vite build` completed cleanly with code 0.
+  - Preview server verified active and responding on `http://localhost:4173/`.
+- **Current Status:** Fully operational, customized for Graphic Era (Deemed & Hill), and verified in both Light and Dark modes.
+

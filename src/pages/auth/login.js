@@ -1,6 +1,7 @@
 import { login, isEmailVerified } from '../../auth.js';
 import { createIcon } from '../../icons.js';
 import { router } from '../../router.js';
+import { appState } from '../../state.js';
 
 let errorMessage = '';
 let infoMessage = '';
@@ -10,21 +11,29 @@ export function renderLoginPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const redirectTarget = urlParams.get('redirect') || '';
 
+  const universities = appState.universities || [
+    'Graphic Era (Deemed to be University) - GEU Dehradun',
+    'Graphic Era Hill University (GEHU Dehradun)',
+    'Graphic Era Hill University (GEHU Bhimtal)',
+    'Graphic Era Hill University (GEHU Haldwani)'
+  ];
+  const branches = appState.branches || ['CSE', 'IT', 'AIDS', 'ECE', 'EE', 'ME', 'Civil', 'Biotechnology', 'MCA', 'BCA', 'MBA'];
+
   // Show "Please login to continue." if redirected from protected content
   const hasRedirect = Boolean(redirectTarget);
   const noticeText = hasRedirect ? 'Please login to continue to protected student resources.' : '';
 
   return `
     <div style="min-height: calc(100vh - 180px); display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;">
-      <div class="card" style="width: 100%; max-width: 440px; padding: 2.5rem; background: var(--bg-card); border: 1px solid var(--border-medium); box-shadow: var(--shadow-lg);">
+      <div class="card" style="width: 100%; max-width: 460px; padding: 2.25rem; background: var(--bg-card); border: 1px solid var(--border-medium); box-shadow: var(--shadow-lg);">
         
-        <div style="text-align: center; margin-bottom: 2rem;">
+        <div style="text-align: center; margin-bottom: 1.75rem;">
           <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); margin: 0 auto 0.75rem; display: flex; align-items: center; justify-content: center;">
             ${createIcon('graduationCap', 24, '#fff')}
           </div>
           <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">Sign In to StudentSphere</h1>
           <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem;">
-            Access free lecture handouts, exam PYQs, and verified interview debriefs
+            Graphic Era (Deemed to be University) & Graphic Era Hill University Hub
           </p>
         </div>
 
@@ -45,6 +54,27 @@ export function renderLoginPage() {
         <form id="login-form" novalidate>
           <input type="hidden" id="login-redirect" value="${redirectTarget}" />
 
+          <!-- Campus / University (GEU Deemed vs GEHU Hill) & Branch Selectors -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="login-campus" class="form-label" style="font-weight: 600; color: var(--text-primary); font-size: 0.8125rem; margin-bottom: 0.35rem; display: block;">
+                Campus (GEU / GEHU)
+              </label>
+              <select class="form-select" id="login-campus" style="font-size: 0.8rem; padding: 0.55rem 0.65rem;">
+                ${universities.map(u => `<option value="${u}">${u.includes('Deemed') ? 'Graphic Era Deemed (GEU)' : u.includes('Bhimtal') ? 'GEHU Bhimtal' : u.includes('Haldwani') ? 'GEHU Haldwani' : 'Graphic Era Hill (GEHU)'}</option>`).join('')}
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="login-branch" class="form-label" style="font-weight: 600; color: var(--text-primary); font-size: 0.8125rem; margin-bottom: 0.35rem; display: block;">
+                Branch / Major
+              </label>
+              <select class="form-select" id="login-branch" style="font-size: 0.8rem; padding: 0.55rem 0.65rem;">
+                ${branches.map(b => `<option value="${b}" ${b === 'CSE' ? 'selected' : ''}>${b}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
           <div class="form-group" style="margin-bottom: 1.25rem;">
             <label for="login-email" class="form-label" style="font-weight: 600; color: var(--text-primary); font-size: 0.875rem; margin-bottom: 0.4rem; display: block;">
               Institutional / Student Email
@@ -54,7 +84,7 @@ export function renderLoginPage() {
               class="form-input" 
               id="login-email" 
               required 
-              placeholder="student@university.edu" 
+              placeholder="student@geu.ac.in" 
               style="width: 100%;" 
             />
           </div>
@@ -157,6 +187,8 @@ export function bindLoginEvents(container) {
       e.preventDefault();
       const email = container.querySelector('#login-email')?.value.trim();
       const password = container.querySelector('#login-password')?.value;
+      const campus = container.querySelector('#login-campus')?.value;
+      const branch = container.querySelector('#login-branch')?.value;
       const redirectTarget = container.querySelector('#login-redirect')?.value || '';
 
       if (!email || !password) {
@@ -172,7 +204,7 @@ export function bindLoginEvents(container) {
       }
 
       try {
-        await login(email, password);
+        await login(email, password, { university: campus, branch });
 
         // Check if email is verified
         if (!isEmailVerified()) {

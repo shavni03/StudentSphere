@@ -6,12 +6,18 @@ import { router } from '../../router.js';
 export function renderRegisterPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const redirectTarget = urlParams.get('redirect') || '';
-  const branches = appState.branches || ['CSE', 'IT', 'AIDS', 'ECE', 'EE', 'ME', 'Civil', 'Chemical'];
+  const universities = appState.universities || [
+    'Graphic Era (Deemed to be University) - GEU Dehradun',
+    'Graphic Era Hill University (GEHU Dehradun)',
+    'Graphic Era Hill University (GEHU Bhimtal)',
+    'Graphic Era Hill University (GEHU Haldwani)'
+  ];
+  const branches = appState.branches || ['CSE', 'IT', 'AIDS', 'ECE', 'EE', 'ME', 'Civil', 'Biotechnology', 'MCA', 'BCA', 'MBA'];
   const semesters = appState.semesters || ['1', '2', '3', '4', '5', '6', '7', '8'];
 
   return `
     <div style="min-height: calc(100vh - 180px); display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;">
-      <div class="card" style="width: 100%; max-width: 490px; padding: 2.5rem; background: var(--bg-card); border: 1px solid var(--border-medium); box-shadow: var(--shadow-lg);">
+      <div class="card" style="width: 100%; max-width: 490px; padding: 2.25rem; background: var(--bg-card); border: 1px solid var(--border-medium); box-shadow: var(--shadow-lg);">
         
         <div style="text-align: center; margin-bottom: 1.75rem;">
           <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); margin: 0 auto 0.75rem; display: flex; align-items: center; justify-content: center;">
@@ -19,7 +25,7 @@ export function renderRegisterPage() {
           </div>
           <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">Create Student Account</h1>
           <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem;">
-            Access free lecture notes, exam PYQs, and verified interview debriefs
+            Graphic Era (Deemed to be University) & Graphic Era Hill University
           </p>
         </div>
 
@@ -43,7 +49,18 @@ export function renderRegisterPage() {
             <label for="reg-email" class="form-label" style="font-weight: 600; color: var(--text-primary); font-size: 0.875rem; margin-bottom: 0.4rem; display: block;">
               Institutional / Student Email *
             </label>
-            <input type="email" class="form-input" id="reg-email" required placeholder="student@university.edu" style="width: 100%;" />
+            <input type="email" class="form-input" id="reg-email" required placeholder="student@geu.ac.in" style="width: 100%;" />
+          </div>
+
+          <!-- University / Campus Selection -->
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="reg-university" class="form-label" style="font-weight: 600; color: var(--text-primary); font-size: 0.875rem; margin-bottom: 0.4rem; display: block;">
+              University / Campus (GEU Deemed / GEHU Hill) *
+            </label>
+            <select class="form-select" id="reg-university" required style="width: 100%;">
+              <option value="" disabled selected>Select Campus (GEU Deemed or GEHU Hill)</option>
+              ${universities.map(u => `<option value="${u}">${u}</option>`).join('')}
+            </select>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
@@ -203,6 +220,7 @@ export function bindRegisterEvents(container) {
 
       const name = container.querySelector('#reg-name')?.value.trim();
       const email = container.querySelector('#reg-email')?.value.trim();
+      const university = container.querySelector('#reg-university')?.value;
       const branch = container.querySelector('#reg-branch')?.value;
       const semester = container.querySelector('#reg-semester')?.value;
       const password = container.querySelector('#reg-password')?.value;
@@ -220,6 +238,11 @@ export function bindRegisterEvents(container) {
 
       if (!email) {
         showError('Please enter your student / institutional email address.');
+        return;
+      }
+
+      if (!university) {
+        showError('Please select your University Campus (GEU Deemed or GEHU Hill).');
         return;
       }
 
@@ -262,7 +285,8 @@ export function bindRegisterEvents(container) {
           confirmPassword,
           termsAccepted,
           branch,
-          semester
+          semester,
+          university
         });
 
         if (successBox) {

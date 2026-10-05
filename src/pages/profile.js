@@ -4,8 +4,14 @@ import { createIcon } from '../icons.js';
 import { deleteAccount, updateUserPhoto } from '../auth.js';
 
 export function renderProfilePage() {
-  const user = appState.currentUser || { name: 'Student', email: 'student@university.edu', branch: 'CSE', semester: '5' };
-  const branches = appState.branches || ['CSE', 'IT', 'AIDS', 'ECE', 'EE', 'ME', 'Civil', 'Chemical'];
+  const user = appState.currentUser || { name: 'Student', email: 'student@geu.ac.in', university: 'Graphic Era (Deemed to be University) - GEU Dehradun', branch: 'CSE', semester: '5' };
+  const universities = appState.universities || [
+    'Graphic Era (Deemed to be University) - GEU Dehradun',
+    'Graphic Era Hill University (GEHU Dehradun)',
+    'Graphic Era Hill University (GEHU Bhimtal)',
+    'Graphic Era Hill University (GEHU Haldwani)'
+  ];
+  const branches = appState.branches || ['CSE', 'IT', 'AIDS', 'ECE', 'EE', 'ME', 'Civil', 'Biotechnology', 'MCA', 'BCA', 'MBA'];
   const semesters = appState.semesters || ['1', '2', '3', '4', '5', '6', '7', '8'];
 
   return `
@@ -15,7 +21,7 @@ export function renderProfilePage() {
           Student Profile
         </h1>
         <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.4rem;">
-          Manage your academic background, degree branch, and public contributor profile.
+          Manage your Graphic Era academic background, degree branch, and public contributor profile.
         </p>
       </div>
 
@@ -67,8 +73,12 @@ export function renderProfilePage() {
             </div>
 
             <div class="form-group" style="grid-column: span 2;">
-              <label class="form-label" style="font-weight: 600; color: var(--text-primary);">University / Institute</label>
-              <input type="text" class="form-input" id="profile-university" value="${user.university || 'Delhi Technological University'}" required />
+              <label class="form-label" style="font-weight: 600; color: var(--text-primary);">University / Campus (GEU Deemed / GEHU Hill)</label>
+              <select class="form-select" id="profile-university">
+                ${universities.map(u => `
+                  <option value="${u}" ${user.university === u ? 'selected' : ''}>${u}</option>
+                `).join('')}
+              </select>
             </div>
 
             <div class="form-group">

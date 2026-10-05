@@ -53,7 +53,7 @@ export function renderNoteDetailPage(params) {
           </button>
         </div>
 
-        <h1 style="font-size: 1.85rem; font-weight: 800; color: #fff; margin-bottom: 0.75rem;">
+        <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.75rem;">
           ${note.title}
         </h1>
 
@@ -64,15 +64,15 @@ export function renderNoteDetailPage(params) {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: 1rem; background-color: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 1.75rem;">
           <div>
             <span style="font-size: 0.75rem; color: var(--text-muted);">Uploader</span>
-            <p style="font-weight: 600; color: #fff;">${note.uploader}</p>
+            <p style="font-weight: 600; color: var(--text-primary);">${note.uploader}</p>
           </div>
           <div>
             <span style="font-size: 0.75rem; color: var(--text-muted);">Format & Pages</span>
-            <p style="font-weight: 600; color: #fff;">${note.resourceType} • ${note.pages} pages</p>
+            <p style="font-weight: 600; color: var(--text-primary);">${note.resourceType} • ${note.pages} pages</p>
           </div>
           <div>
             <span style="font-size: 0.75rem; color: var(--text-muted);">File Size</span>
-            <p style="font-weight: 600; color: #fff;">${note.fileSize}</p>
+            <p style="font-weight: 600; color: var(--text-primary);">${note.fileSize}</p>
           </div>
           <div>
             <span style="font-size: 0.75rem; color: var(--text-muted);">Community Rating</span>
@@ -83,7 +83,7 @@ export function renderNoteDetailPage(params) {
         <!-- Rating UI Component -->
         <div style="padding: 1.25rem; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle); margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem;">
           <div>
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff;">Rate this Academic Resource</h4>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Rate this Academic Resource</h4>
             <p style="font-size: 0.8rem; color: var(--text-muted);">Help fellow peers discover accurate and high-quality exam material.</p>
           </div>
           <div style="display: flex; align-items: center; gap: 0.4rem;">
@@ -103,7 +103,7 @@ export function renderNoteDetailPage(params) {
         <!-- Free Download CTA Banner -->
         <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem; border-radius: var(--radius-md); background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%); border: 1px solid rgba(99, 102, 241, 0.35);">
           <div>
-            <h4 style="font-size: 1.05rem; color: #fff; font-weight: 700;">Open Academic Access Guarantee</h4>
+            <h4 style="font-size: 1.05rem; color: var(--text-primary); font-weight: 700;">Open Academic Access Guarantee</h4>
             <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
               Universal student access: <strong>0 Credits deducted</strong>. Downloading notes is 100% free forever.
             </p>
@@ -121,12 +121,12 @@ export function renderNoteDetailPage(params) {
         <div class="modal-backdrop" id="report-modal-backdrop">
           <div class="modal-content" style="max-width: 500px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">Report Note Resource</h3>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Report Note Resource</h3>
               <button id="report-modal-close-btn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem;">✕</button>
             </div>
             <form id="note-report-form">
               <div class="form-group" style="margin-bottom: 1rem;">
-                <label class="form-label" style="font-weight: 600; color: #fff;">Reason for Report *</label>
+                <label class="form-label" style="font-weight: 600; color: var(--text-primary);">Reason for Report *</label>
                 <select id="report-reason-select" class="form-select" required>
                   <option value="Inaccurate syllabus or answers">Inaccurate syllabus or answers</option>
                   <option value="Copyright or author infringement">Copyright or author infringement</option>
@@ -136,7 +136,7 @@ export function renderNoteDetailPage(params) {
                 </select>
               </div>
               <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label class="form-label" style="font-weight: 600; color: #fff;">Additional Details (Optional)</label>
+                <label class="form-label" style="font-weight: 600; color: var(--text-primary);">Additional Details (Optional)</label>
                 <textarea id="report-details-textarea" class="form-textarea" rows="3" placeholder="Please describe the specific issue or page number..."></textarea>
               </div>
               <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">

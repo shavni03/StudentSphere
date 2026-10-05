@@ -3,6 +3,7 @@ import { appState } from '../../state.js';
 import { createIcon } from '../../icons.js';
 
 export function renderAdminSettingsPage() {
+  const universities = appState.universities || [];
   const branches = appState.branches || [];
   const semesters = appState.semesters || [];
 
@@ -11,21 +12,52 @@ export function renderAdminSettingsPage() {
     <div style="margin-bottom: 2rem;">
       <h3 style="font-size: 1.35rem; font-weight: 800; color: #fff;">System Architecture & Platform Policies</h3>
       <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
-        Core configuration for academic branches, semesters, notification integrations, and zero-credit rules.
+        Core configuration for Graphic Era campuses, degree branches, semesters, notification integrations, and zero-credit rules.
       </p>
     </div>
 
     <div style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 850px;">
 
-      <!-- Academic Branches & Semesters Management (Admin Feature) -->
+      <!-- Academic Campuses, Branches & Semesters Management (Admin Feature) -->
       <div class="card" style="padding: 1.75rem; border: 1px solid var(--border-medium);">
         <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem;">
           ${createIcon('graduationCap', 22, '#6366f1')}
-          <h4 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin: 0;">Academic Branches & Semesters Management</h4>
+          <h4 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin: 0;">Graphic Era Campuses & Academic Curriculum Management</h4>
         </div>
         <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-          Configure the official degree branches and semesters available for student registration, study note filtering, and exam papers.
+          Configure the active Graphic Era university campuses (GEU Deemed / GEHU Hill), academic branches, and semesters available for student sign in, registration, and study material filtering.
         </p>
+
+        <!-- Manage Campuses -->
+        <div style="margin-bottom: 1.75rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle);">
+          <label style="display: block; font-size: 0.875rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.75rem;">
+            Active Graphic Era Campuses (${universities.length})
+          </label>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;" id="admin-universities-list">
+            ${universities.map(u => `
+              <span class="badge badge-info" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                ${u}
+                <button type="button" class="admin-remove-uni-btn" data-uni="${u}" title="Remove ${u}" style="background: transparent; border: none; color: inherit; cursor: pointer; padding: 0; display: flex; align-items: center;">
+                  ${createIcon('x', 14, 'currentColor')}
+                </button>
+              </span>
+            `).join('')}
+          </div>
+
+          <form id="admin-add-uni-form" style="display: flex; gap: 0.5rem; max-width: 500px;">
+            <input 
+              type="text" 
+              class="form-input" 
+              id="admin-new-uni-input" 
+              placeholder="e.g. Graphic Era Deemed to be University" 
+              required 
+              style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.85rem;" 
+            />
+            <button type="submit" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.85rem; white-space: nowrap;">
+              + Add Campus
+            </button>
+          </form>
+        </div>
 
         <!-- Manage Branches -->
         <div style="margin-bottom: 1.75rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle);">
@@ -160,6 +192,40 @@ export function renderAdminSettingsPage() {
 
 export function bindAdminSettingsEvents(container) {
   bindAdminLayoutEvents(container);
+
+  // Add Campus
+  const addUniForm = container.querySelector('#admin-add-uni-form');
+  if (addUniForm) {
+    addUniForm.onsubmit = (e) => {
+      e.preventDefault();
+      const input = container.querySelector('#admin-new-uni-input');
+      const val = input?.value?.trim();
+      if (val) {
+        appState.addUniversity(val);
+        input.value = '';
+        const parent = container.closest('#app-content');
+        if (parent) {
+          parent.innerHTML = renderAdminSettingsPage();
+          bindAdminSettingsEvents(parent);
+        }
+      }
+    };
+  }
+
+  // Remove Campus
+  container.querySelectorAll('.admin-remove-uni-btn').forEach(btn => {
+    btn.onclick = () => {
+      const uni = btn.getAttribute('data-uni');
+      if (confirm(`Remove campus "${uni}"?`)) {
+        appState.removeUniversity(uni);
+        const parent = container.closest('#app-content');
+        if (parent) {
+          parent.innerHTML = renderAdminSettingsPage();
+          bindAdminSettingsEvents(parent);
+        }
+      }
+    };
+  });
 
   // Add Branch
   const addBranchForm = container.querySelector('#admin-add-branch-form');

@@ -105,7 +105,7 @@ export function isEmailVerified() {
 /**
  * Register a new student account
  */
-export async function register({ name, email, password, confirmPassword, termsAccepted = false, branch = 'CSE', semester = '5' }) {
+export async function register({ name, email, password, confirmPassword, termsAccepted = false, branch = 'CSE', semester = '5', university = 'Graphic Era (Deemed to be University) - GEU Dehradun' }) {
   if (!name || !email || !password) {
     throw new Error('Please fill in all required fields.');
   }
@@ -145,6 +145,7 @@ export async function register({ name, email, password, confirmPassword, termsAc
       email: user.email,
       branch,
       semester,
+      university: university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
       role: 'student',
       isEmailVerified: false,
       credits: 100
@@ -169,6 +170,7 @@ export async function register({ name, email, password, confirmPassword, termsAc
       email,
       branch,
       semester,
+      university: university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
       role: 'student',
       isEmailVerified: false,
       credits: 100
@@ -191,10 +193,13 @@ export const registerUser = register;
 /**
  * Log in with email and password
  */
-export async function login(email, password) {
+export async function login(email, password, options = {}) {
   if (!email || !password) {
     throw new Error('Email and password are required.');
   }
+
+  const selectedCampus = options.university || options.campus || appState.currentUser?.university || 'Graphic Era (Deemed to be University) - GEU Dehradun';
+  const selectedBranch = options.branch || appState.currentUser?.branch || 'CSE';
 
   if (isFirebaseConfigured && auth) {
     try {
@@ -206,9 +211,11 @@ export async function login(email, password) {
         id: user.uid,
         name: user.displayName || email.split('@')[0],
         email: user.email,
+        photoURL: user.photoURL || appState.currentUser?.photoURL || null,
         role: user.email?.includes('admin') ? 'admin' : (appState.currentUser?.role || 'student'),
         isEmailVerified: Boolean(user.emailVerified),
-        branch: appState.currentUser?.branch || 'CSE',
+        university: selectedCampus,
+        branch: selectedBranch,
         semester: appState.currentUser?.semester || '5',
         credits: appState.currentUser?.credits ?? 350
       };
@@ -242,10 +249,14 @@ export async function login(email, password) {
         email,
         role: email.includes('admin') ? 'admin' : 'student',
         isEmailVerified: false,
-        branch: 'CSE',
+        university: selectedCampus,
+        branch: selectedBranch,
         semester: '5',
         credits: 350
       };
+    } else {
+      userProfile.university = selectedCampus;
+      userProfile.branch = selectedBranch;
     }
 
     userProfile.email = email;
@@ -407,16 +418,26 @@ export const requireAuth = checkAuth;
 if (isFirebaseConfigured && auth) {
   onAuthStateChanged(auth, (user) => {
     if (user) {
+      let existing = null;
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY_AUTH_USER);
+        if (stored) existing = JSON.parse(stored);
+      } catch {
+        // ignore
+      }
+
       const userProfile = {
         uid: user.uid,
         id: user.uid,
         name: user.displayName || user.email?.split('@')[0] || 'Student',
         email: user.email,
+        photoURL: user.photoURL || existing?.photoURL || null,
         isEmailVerified: Boolean(user.emailVerified),
-        role: user.email?.includes('admin') ? 'admin' : (appState.currentUser?.role || 'student'),
-        branch: appState.currentUser?.branch || 'CSE',
-        semester: appState.currentUser?.semester || '5',
-        credits: appState.currentUser?.credits ?? 350
+        role: user.email?.includes('admin') ? 'admin' : (existing?.role || appState.currentUser?.role || 'student'),
+        university: existing?.university || appState.currentUser?.university || 'Graphic Era (Deemed to be University) - GEU Dehradun',
+        branch: existing?.branch || appState.currentUser?.branch || 'CSE',
+        semester: existing?.semester || appState.currentUser?.semester || '5',
+        credits: existing?.credits ?? appState.currentUser?.credits ?? 350
       };
       localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(userProfile));
       appState.currentUser = userProfile;

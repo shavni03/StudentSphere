@@ -148,7 +148,7 @@ export function renderNavbar() {
                         </div>
                         <div style="flex: 1; min-width: 0;">
                           <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-                            <h5 style="font-size: 0.825rem; font-weight: ${item.isRead ? '600' : '700'}; color: ${item.isRead ? 'var(--text-secondary)' : '#fff'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <h5 style="font-size: 0.825rem; font-weight: ${item.isRead ? '600' : '700'}; color: ${item.isRead ? 'var(--text-secondary)' : 'var(--text-primary)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                               ${item.title}
                             </h5>
                             ${!item.isRead ? '<span style="width: 7px; height: 7px; border-radius: 50%; background: #6366f1; flex-shrink: 0;"></span>' : ''}

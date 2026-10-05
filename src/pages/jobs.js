@@ -132,7 +132,7 @@ export function renderJobsPage() {
           ${list.length === 0 ? `
             <div class="card" style="text-align: center; padding: 3.5rem 1rem;">
               <div style="opacity: 0.4; margin-bottom: 1rem;">${createIcon('briefcase', 44, 'var(--text-muted)')}</div>
-              <h3 style="font-size: 1.15rem; color: #fff;">No job openings found</h3>
+              <h3 style="font-size: 1.15rem; color: var(--text-primary);">No job openings found</h3>
               <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem;">
                 Try relaxing the location, mode, or campus track filter.
               </p>
@@ -156,13 +156,13 @@ export function renderJobsPage() {
                         </div>
 
                         <a href="/jobs/${job.id}" data-link>
-                          <h3 style="font-size: 1.2rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem;">
+                          <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">
                             ${job.role}
                           </h3>
                         </a>
 
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.65rem;">
-                          <span style="font-size: 0.95rem; font-weight: 600; color: #e2e8f0;">${job.company}</span>
+                          <span style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary);">${job.company}</span>
                           <span style="color: var(--text-muted);">•</span>
                           <span style="font-size: 0.825rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem;">
                             ${createIcon('mapPin', 13, 'currentColor')} ${job.location}

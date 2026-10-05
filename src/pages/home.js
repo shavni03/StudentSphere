@@ -16,8 +16,8 @@ export function renderHomePage() {
         <div class="container" style="max-width: 920px;">
           
           <!-- Announcement Pill -->
-          <div style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; border-radius: var(--radius-full); background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.3); color: var(--primary); font-size: 0.85rem; font-weight: 600; margin-bottom: 1.75rem;">
-            ${createIcon('sparkles', 16, 'currentColor')} Open Student Academic & Career Intelligence Hub
+          <div style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1.1rem; border-radius: var(--radius-full); background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.3); color: var(--primary); font-size: 0.85rem; font-weight: 600; margin-bottom: 1.75rem;">
+            ${createIcon('graduationCap', 16, 'currentColor')} Dedicated to Graphic Era (Deemed) & Graphic Era Hill University (GEHU)
           </div>
 
           <!-- Main Title -->

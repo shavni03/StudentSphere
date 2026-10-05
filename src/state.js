@@ -1,6 +1,29 @@
 import { notificationApi, DEFAULT_PREFERENCES, DEFAULT_TELEGRAM_STATUS } from './api/notificationApi.js';
 
-const DEFAULT_BRANCHES = ['CSE', 'IT', 'AIDS', 'ECE', 'EE', 'ME', 'Civil', 'Chemical'];
+const DEFAULT_UNIVERSITIES = [
+  'Graphic Era (Deemed to be University) - GEU Dehradun',
+  'Graphic Era Hill University (GEHU Dehradun)',
+  'Graphic Era Hill University (GEHU Bhimtal)',
+  'Graphic Era Hill University (GEHU Haldwani)'
+];
+
+const DEFAULT_BRANCHES = [
+  'CSE',
+  'CSE (AI & ML)',
+  'CSE (Data Science)',
+  'CSE (Cyber Security)',
+  'IT',
+  'AIDS',
+  'ECE',
+  'EE',
+  'ME',
+  'Civil',
+  'Biotechnology',
+  'MCA',
+  'BCA',
+  'MBA',
+  'BBA'
+];
 const DEFAULT_SEMESTERS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
 class StateStore {
@@ -16,11 +39,14 @@ class StateStore {
     // Do NOT assume user is logged in until Firebase confirms auth state
     this.currentUser = null;
 
-    // Branches & Semesters management (Admin-configurable)
+    // Graphic Era Universities, Branches & Semesters management (Admin-configurable)
+    let savedUniversities = null;
     let savedBranches = null;
     let savedSemesters = null;
     if (typeof localStorage !== 'undefined') {
       try {
+        const u = localStorage.getItem('studentsphere_universities');
+        if (u) savedUniversities = JSON.parse(u);
         const b = localStorage.getItem('studentsphere_branches');
         if (b) savedBranches = JSON.parse(b);
         const s = localStorage.getItem('studentsphere_semesters');
@@ -29,6 +55,7 @@ class StateStore {
         // use defaults
       }
     }
+    this.universities = Array.isArray(savedUniversities) && savedUniversities.length ? savedUniversities : [...DEFAULT_UNIVERSITIES];
     this.branches = Array.isArray(savedBranches) && savedBranches.length ? savedBranches : [...DEFAULT_BRANCHES];
     this.semesters = Array.isArray(savedSemesters) && savedSemesters.length ? savedSemesters : [...DEFAULT_SEMESTERS];
 
@@ -86,9 +113,29 @@ class StateStore {
     }
   }
 
+  // University / Campus management
+  addUniversity(uni) {
+    const trimmed = (uni || '').trim();
+    if (trimmed && !this.universities.includes(trimmed)) {
+      this.universities.push(trimmed);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('studentsphere_universities', JSON.stringify(this.universities));
+      }
+      this.notify();
+    }
+  }
+
+  removeUniversity(uni) {
+    this.universities = this.universities.filter(u => u !== uni);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('studentsphere_universities', JSON.stringify(this.universities));
+    }
+    this.notify();
+  }
+
   // Branch management
   addBranch(branch) {
-    const trimmed = (branch || '').trim().toUpperCase();
+    const trimmed = (branch || '').trim();
     if (trimmed && !this.branches.includes(trimmed)) {
       this.branches.push(trimmed);
       if (typeof localStorage !== 'undefined') {

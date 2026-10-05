@@ -9,7 +9,7 @@ export function renderCreditsPage() {
   return `
     <div class="container" style="padding: 2rem 1rem 4rem;">
       <div style="margin-bottom: 2rem;">
-        <h1 style="font-size: 2rem; font-weight: 800; color: #fff; letter-spacing: -0.02em;">
+        <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em;">
           Credits & Community Rewards
         </h1>
         <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.4rem;">
@@ -57,11 +57,11 @@ export function renderCreditsPage() {
 
       <!-- Ways to Earn Credits -->
       <div class="card" style="padding: 1.75rem; margin-bottom: 2.5rem;">
-        <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 1.25rem;">Ways to Earn Credits</h3>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1.25rem;">Ways to Earn Credits</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
           <div style="padding: 1.25rem; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff;">Note Approved</h4>
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Note Approved</h4>
               <span class="badge badge-success">+${CREDIT_CONFIG.NOTE_APPROVED} Cr</span>
             </div>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem;">
@@ -74,7 +74,7 @@ export function renderCreditsPage() {
 
           <div style="padding: 1.25rem; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff;">PYQ Approved</h4>
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">PYQ Approved</h4>
               <span class="badge badge-success">+${CREDIT_CONFIG.PYQ_APPROVED} Cr</span>
             </div>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem;">
@@ -87,7 +87,7 @@ export function renderCreditsPage() {
 
           <div style="padding: 1.25rem; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff;">Interview Experience Approved</h4>
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Interview Experience Approved</h4>
               <span class="badge badge-success">+${CREDIT_CONFIG.INTERVIEW_APPROVED} Cr</span>
             </div>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem;">
@@ -102,12 +102,12 @@ export function renderCreditsPage() {
 
       <!-- Rewards Catalog -->
       <div class="card" style="padding: 1.75rem; margin-bottom: 2.5rem;">
-        <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 1.25rem;">Redeem Rewards Store</h3>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1.25rem;">Redeem Rewards Store</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem;">
           <div style="padding: 1.25rem; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); display: flex; flex-direction: column; justify-content: space-between;">
             <div>
               <span class="badge badge-warning" style="margin-bottom: 0.5rem;">300 Credits</span>
-              <h4 style="font-size: 1rem; font-weight: 700; color: #fff;">Senior Resume Review</h4>
+              <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">Senior Resume Review</h4>
               <p style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.3rem;">
                 Get personalized ATS review and annotated feedback from placed alumni.
               </p>
@@ -118,7 +118,7 @@ export function renderCreditsPage() {
           <div style="padding: 1.25rem; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); display: flex; flex-direction: column; justify-content: space-between;">
             <div>
               <span class="badge badge-warning" style="margin-bottom: 0.5rem;">500 Credits</span>
-              <h4 style="font-size: 1rem; font-weight: 700; color: #fff;">1-on-1 Mock Tech Interview</h4>
+              <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">1-on-1 Mock Tech Interview</h4>
               <p style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.3rem;">
                 45-minute live DSA / System Design mock session with real-time rubric score.
               </p>
@@ -129,7 +129,7 @@ export function renderCreditsPage() {
           <div style="padding: 1.25rem; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); display: flex; flex-direction: column; justify-content: space-between;">
             <div>
               <span class="badge badge-warning" style="margin-bottom: 0.5rem;">200 Credits</span>
-              <h4 style="font-size: 1rem; font-weight: 700; color: #fff;">Golden Scholar Profile Badge</h4>
+              <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">Golden Scholar Profile Badge</h4>
               <p style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.3rem;">
                 Permanent highlighted badge next to your name across discussions and notes.
               </p>
@@ -141,7 +141,7 @@ export function renderCreditsPage() {
 
       <!-- Transaction History Table -->
       <div class="card" style="padding: 1.5rem;">
-        <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 1rem;">Credit Ledger History</h3>
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;">Credit Ledger History</h3>
         <div style="overflow-x: auto;">
           <table class="table" style="width: 100%; text-align: left; border-collapse: collapse;">
             <thead>
@@ -156,7 +156,7 @@ export function renderCreditsPage() {
             <tbody>
               ${mockCreditTransactions.slice(0, 8).map(tx => `
                 <tr style="border-bottom: 1px solid var(--border-subtle); font-size: 0.85rem;">
-                  <td style="padding: 0.85rem 1rem; color: #fff; font-weight: 600;">${tx.description}</td>
+                  <td style="padding: 0.85rem 1rem; color: var(--text-primary); font-weight: 600;">${tx.description}</td>
                   <td style="padding: 0.85rem 1rem;">
                     <span class="badge ${tx.type === 'EARNED' ? 'badge-success' : 'badge-warning'}">
                       ${tx.type}

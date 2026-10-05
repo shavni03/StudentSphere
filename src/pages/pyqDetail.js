@@ -53,7 +53,7 @@ export function renderPYQDetailPage(params) {
           </button>
         </div>
 
-        <h1 style="font-size: 1.75rem; font-weight: 800; color: #fff; margin-bottom: 0.5rem;">
+        <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">
           ${pyq.subject} — ${pyq.examType} (${pyq.year})
         </h1>
 
@@ -64,15 +64,15 @@ export function renderPYQDetailPage(params) {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 1.5rem;">
           <div>
             <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded By</span>
-            <p style="font-weight: 600; color: #fff;">${pyq.uploader}</p>
+            <p style="font-weight: 600; color: var(--text-primary);">${pyq.uploader}</p>
           </div>
           <div>
             <span style="font-size: 0.75rem; color: var(--text-muted);">File Size</span>
-            <p style="font-weight: 600; color: #fff;">${pyq.fileSize}</p>
+            <p style="font-weight: 600; color: var(--text-primary);">${pyq.fileSize}</p>
           </div>
           <div>
             <span style="font-size: 0.75rem; color: var(--text-muted);">Exam Year</span>
-            <p style="font-weight: 600; color: #fff;">${pyq.year}</p>
+            <p style="font-weight: 600; color: var(--text-primary);">${pyq.year}</p>
           </div>
           <div>
             <span style="font-size: 0.75rem; color: var(--text-muted);">Total Downloads</span>
@@ -83,7 +83,7 @@ export function renderPYQDetailPage(params) {
         <!-- Rating UI Component -->
         <div style="padding: 1.25rem; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle); margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem;">
           <div>
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff;">Rate this Exam Paper</h4>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Rate this Exam Paper</h4>
             <p style="font-size: 0.8rem; color: var(--text-muted);">Help students verify answer completeness and exam question quality.</p>
           </div>
           <div style="display: flex; align-items: center; gap: 0.4rem;">
@@ -103,7 +103,7 @@ export function renderPYQDetailPage(params) {
         <!-- Free Download CTA Banner -->
         <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem; border-radius: var(--radius-md); background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%); border: 1px solid rgba(99, 102, 241, 0.35);">
           <div>
-            <h4 style="font-size: 1.05rem; color: #fff; font-weight: 700;">Direct Academic Download</h4>
+            <h4 style="font-size: 1.05rem; color: var(--text-primary); font-weight: 700;">Direct Academic Download</h4>
             <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
               100% Free Archive for university students. <strong>0 Credits deducted</strong>.
             </p>
@@ -121,12 +121,12 @@ export function renderPYQDetailPage(params) {
         <div class="modal-backdrop" id="pyq-report-modal-backdrop">
           <div class="modal-content" style="max-width: 500px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">Report Question Paper</h3>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Report Question Paper</h3>
               <button id="pyq-report-close-btn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem;">✕</button>
             </div>
             <form id="pyq-report-form">
               <div class="form-group" style="margin-bottom: 1rem;">
-                <label class="form-label" style="font-weight: 600; color: #fff;">Reason for Report *</label>
+                <label class="form-label" style="font-weight: 600; color: var(--text-primary);">Reason for Report *</label>
                 <select id="pyq-report-reason" class="form-select" required>
                   <option value="Incorrect year or exam session">Incorrect year or exam session</option>
                   <option value="Wrong university or syllabus">Wrong university or syllabus</option>
@@ -136,7 +136,7 @@ export function renderPYQDetailPage(params) {
                 </select>
               </div>
               <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label class="form-label" style="font-weight: 600; color: #fff;">Additional Comments</label>
+                <label class="form-label" style="font-weight: 600; color: var(--text-primary);">Additional Comments</label>
                 <textarea id="pyq-report-details" class="form-textarea" rows="3" placeholder="Provide any details to help moderators..."></textarea>
               </div>
               <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">

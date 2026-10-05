@@ -117,7 +117,7 @@ export function renderNotificationsPage() {
         ${filtered.length === 0 ? `
           <div class="card" style="text-align: center; padding: 3.5rem 1rem;">
             <div style="margin-bottom: 1rem; opacity: 0.4;">${createIcon('bell', 44, 'var(--text-muted)')}</div>
-            <h3 style="font-size: 1.15rem; color: #fff;">No notifications found</h3>
+            <h3 style="font-size: 1.15rem; color: var(--text-primary);">No notifications found</h3>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem;">
               You have no alerts matching the selected tab and filters.
             </p>
@@ -135,7 +135,7 @@ export function renderNotificationsPage() {
               <div style="flex: 1; min-width: 0;">
                 <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem;">
                   <div style="display: flex; align-items: center; gap: 0.65rem;">
-                    <h4 style="font-size: 0.975rem; font-weight: ${item.isRead ? '600' : '700'}; color: ${item.isRead ? 'var(--text-primary)' : '#fff'};">
+                    <h4 style="font-size: 0.975rem; font-weight: ${item.isRead ? '600' : '700'}; color: var(--text-primary);">
                       ${item.title}
                     </h4>
                     <span class="badge ${item.priority === 'Urgent' ? 'badge-danger' : item.priority === 'Important' ? 'badge-warning' : 'badge-secondary'}">
