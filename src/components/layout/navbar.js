@@ -84,6 +84,15 @@ export function renderNavbar() {
             ✨ Free Downloads (0 Credits)
           </div>
 
+          <!-- Theme Toggle (Light / Dark) -->
+          <button
+            id="navbar-theme-toggle-btn"
+            title="Switch to ${appState.theme === 'dark' ? 'Light' : 'Dark'} Mode"
+            style="width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--bg-tertiary); border: 1px solid var(--border-medium); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); transition: var(--transition-fast);"
+          >
+            ${appState.theme === 'dark' ? createIcon('sun', 18, '#f59e0b') : createIcon('moon', 18, '#6366f1')}
+          </button>
+
           <!-- 🔔 Notification Bell & Dropdown -->
           <div style="position: relative;" id="navbar-bell-container">
             <button
@@ -230,6 +239,13 @@ export function renderNavbar() {
 }
 
 export function bindNavbarEvents(container) {
+  const themeToggle = container.querySelector('#navbar-theme-toggle-btn');
+  if (themeToggle) {
+    themeToggle.onclick = () => {
+      appState.toggleTheme();
+    };
+  }
+
   const bellBtn = container.querySelector('#notification-bell-btn');
   if (bellBtn) {
     bellBtn.onclick = (e) => {

@@ -9,7 +9,6 @@ class StateStore {
     this.isDropdownOpen = false;
     this.isUserMenuOpen = false;
 
-    // Default user state with role switcher
     const savedUser = localStorage.getItem('studentsphere_user');
     this.currentUser = savedUser ? JSON.parse(savedUser) : {
       id: 'usr-001',
@@ -22,6 +21,13 @@ class StateStore {
       credits: 350,
       isEmailVerified: true
     };
+
+    // Theme state (dark | light)
+    const savedTheme = localStorage.getItem('studentsphere_theme') || 'dark';
+    this.theme = savedTheme;
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
 
     // Saved jobs
     const savedJobs = localStorage.getItem('studentsphere_saved_jobs');
@@ -131,6 +137,15 @@ class StateStore {
       this.savedJobIds.push(id);
     }
     localStorage.setItem('studentsphere_saved_jobs', JSON.stringify(this.savedJobIds));
+    this.notify();
+  }
+
+  toggleTheme() {
+    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('studentsphere_theme', this.theme);
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', this.theme);
+    }
     this.notify();
   }
 

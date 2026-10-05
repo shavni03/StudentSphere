@@ -5,7 +5,7 @@ import { renderNavbar, bindNavbarEvents } from './components/layout/navbar.js';
 import { renderFooter } from './components/layout/footer.js';
 
 // Public Academic & Career Pages
-import { renderHomePage } from './pages/home.js';
+import { renderHomePage, bindHomePageEvents } from './pages/home.js';
 import { renderNotesPage, bindNotesPageEvents } from './pages/notes.js';
 import { renderNoteDetailPage, bindNoteDetailPageEvents } from './pages/noteDetail.js';
 import { renderPYQsPage, bindPYQsPageEvents } from './pages/pyqs.js';
@@ -119,7 +119,7 @@ appState.subscribe(() => {
 router
   // Public & Academic
   .addRoute('/', () => {
-    renderAppShell(renderHomePage(), null, 'Open Academic & Career Platform');
+    renderAppShell(renderHomePage(), bindHomePageEvents, 'Open Academic & Career Platform');
   })
   .addRoute('/notes', () => {
     renderAppShell(renderNotesPage(), bindNotesPageEvents, 'Lecture Notes & Study Material');
